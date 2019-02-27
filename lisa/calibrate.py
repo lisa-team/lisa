@@ -1,18 +1,16 @@
 # -*- coding: utf-8 -*-
-""" A collection of functions used for data import/export and configuration.
+""" This is where the magic happens (TODO fix this docstring)
 
-This module contains the functions required for manipulating input data for use
-in the rest of the package, and also export to standard formats.
+This is where the linear regression analysis happens to calibrate the weights
+for a linear LTS methodology
 
 Example:
     TODO insert some examples if needed
 
 """
 
-# TODO some of what Nathan, Uma, and Annie have been writing goes here
 
-
-def shapefile_to_osmnx_graph(blah: str, blah2: str, blah3: int):
+def linear_regression_it(blah: str, blah2: str, blah3: int):
     """This is a single line describing function.
 
     This is your more detailed breakdown of the functions inner workings if

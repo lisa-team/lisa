@@ -1,6 +1,18 @@
 
 ### Custom ###
 out/*
+*.pickle
+env/
+*.shp
+*.shx
+*.dbf
+*.sbx
+*.sbn
+*.prj
+*.shp.xml
+*.cpg
+Shapefile/
+
 
 # Created by https://www.gitignore.io/api/vim,macos,linux,python,jetbrains,visualstudio,visualstudiocode
 # Edit at https://www.gitignore.io/?templates=vim,macos,linux,python,jetbrains,visualstudio,visualstudiocode

@@ -1,48 +1,35 @@
 # -*- coding: utf-8 -*-
-"""Example NumPy style docstrings.
+"""Example Google style docstrings.
 
-more on this here:
-    https://numpydoc.readthedocs.io/en/latest/format.html#docstring-standard
+This module demonstrates documentation as specified by the `Google Python
+Style Guide`_. Docstrings may extend over multiple lines. Sections are created
+with a section header and a colon followed by a block of indented text.
 
-This module demonstrates documentation as specified by the `NumPy
-Documentation HOWTO`_. Docstrings may extend over multiple lines. Sections
-are created with a section header followed by an underline of equal length.
+Example:
+    Examples can be given using either the ``Example`` or ``Examples``
+    sections. Sections support any reStructuredText formatting, including
+    literal blocks::
 
-Example
--------
-Examples can be given using either the ``Example`` or ``Examples``
-sections. Sections support any reStructuredText formatting, including
-literal blocks::
+        $ python example_google.py
 
-    $ python example_numpy.py
+Section breaks are created by resuming unindented text. Section breaks
+are also implicitly created anytime a new section starts.
 
+Attributes:
+    module_level_variable1 (int): Module level variables may be documented in
+        either the ``Attributes`` section of the module docstring, or in an
+        inline docstring immediately following the variable.
 
-Section breaks are created with two blank lines. Section breaks are also
-implicitly created anytime a new section starts. Section bodies *may* be
-indented:
+        Either form is acceptable, but the two should not be mixed. Choose
+        one convention to document module level variables and be consistent
+        with it.
 
-Notes
------
-    This is an example of an indented section. It's like any other section,
-    but the body is indented to help it stand out from surrounding text.
+Todo:
+    * For module TODOs
+    * You have to also use ``sphinx.ext.todo`` extension
 
-If a section is indented, then a section break is created by
-resuming unindented text.
-
-Attributes
-----------
-module_level_variable1 : int
-    Module level variables may be documented in either the ``Attributes``
-    section of the module docstring, or in an inline docstring immediately
-    following the variable.
-
-    Either form is acceptable, but the two should not be mixed. Choose
-    one convention to document module level variables and be consistent
-    with it.
-
-
-.. _NumPy Documentation HOWTO:
-   https://github.com/numpy/numpy/blob/master/doc/HOWTO_DOCUMENT.rst.txt
+.. _Google Python Style Guide:
+   http://google.github.io/styleguide/pyguide.html
 
 """
 
@@ -63,17 +50,12 @@ def function_with_types_in_docstring(param1, param2):
     return types are annotated according to `PEP 484`_, they do not need to be
     included in the docstring:
 
-    Parameters
-    ----------
-    param1 : int
-        The first parameter.
-    param2 : str
-        The second parameter.
+    Args:
+        param1 (int): The first parameter.
+        param2 (str): The second parameter.
 
-    Returns
-    -------
-    bool
-        True if successful, False otherwise.
+    Returns:
+        bool: The return value. True for success, False otherwise.
 
     .. _PEP 484:
         https://www.python.org/dev/peps/pep-0484/
@@ -81,68 +63,53 @@ def function_with_types_in_docstring(param1, param2):
     """
 
 
-#  def function_with_pep484_type_annotations(param1: int, param2: str) -> bool:
-#      """Example function with PEP 484 type annotations.
-#
-#      The return type must be duplicated in the docstring to comply
-#      with the NumPy docstring style.
-#
-#      Parameters
-#      ----------
-#      param1
-#          The first parameter.
-#      param2
-#          The second parameter.
-#
-#      Returns
-#      -------
-#      bool
-#          True if successful, False otherwise.
-#
-#      """
+def function_with_pep484_type_annotations(param1: int, param2: str) -> bool:
+    """Example function with PEP 484 type annotations.
+
+    Args:
+        param1: The first parameter.
+        param2: The second parameter.
+
+    Returns:
+        The return value. True for success, False otherwise.
+
+    """
 
 
 def module_level_function(param1, param2=None, *args, **kwargs):
     """This is an example of a module level function.
 
-    Function parameters should be documented in the ``Parameters`` section.
-    The name of each parameter is required. The type and description of each
-    parameter is optional, but should be included if not obvious.
+    Function parameters should be documented in the ``Args`` section. The name
+    of each parameter is required. The type and description of each parameter
+    is optional, but should be included if not obvious.
 
     If \*args or \*\*kwargs are accepted,
     they should be listed as ``*args`` and ``**kwargs``.
 
     The format for a parameter is::
 
-        name : type
-            description
-
-            The description may span multiple lines. Following lines
-            should be indented to match the first line of the description.
-            The ": type" is optional.
+        name (type): description
+            The description may span multiple lines. Following
+            lines should be indented. The "(type)" is optional.
 
             Multiple paragraphs are supported in parameter
             descriptions.
 
-    Parameters
-    ----------
-    param1 : int
-        The first parameter.
-    param2 : :obj:`str`, optional
-        The second parameter.
-    *args
-        Variable length argument list.
-    **kwargs
-        Arbitrary keyword arguments.
+    Args:
+        param1 (int): The first parameter.
+        param2 (:obj:`str`, optional): The second parameter. Defaults to None.
+            Second line of description should be indented.
+        *args: Variable length argument list.
+        **kwargs: Arbitrary keyword arguments.
 
-    Returns
-    -------
-    bool
-        True if successful, False otherwise.
+    Returns:
+        bool: True if successful, False otherwise.
 
-        The return type is not optional. The ``Returns`` section may span
-        multiple lines and paragraphs. Following lines should be indented to
-        match the first line of the description.
+        The return type is optional and may be specified at the beginning of
+        the ``Returns`` section followed by a colon.
+
+        The ``Returns`` section may span multiple lines and paragraphs.
+        Following lines should be indented to match the first line.
 
         The ``Returns`` section supports any reStructuredText formatting,
         including literal blocks::
@@ -152,13 +119,10 @@ def module_level_function(param1, param2=None, *args, **kwargs):
                 'param2': param2
             }
 
-    Raises
-    ------
-    AttributeError
-        The ``Raises`` section is a list of all exceptions
-        that are relevant to the interface.
-    ValueError
-        If `param2` is equal to `param1`.
+    Raises:
+        AttributeError: The ``Raises`` section is a list of all exceptions
+            that are relevant to the interface.
+        ValueError: If `param2` is equal to `param1`.
 
     """
     if param1 == param2:
@@ -169,23 +133,18 @@ def module_level_function(param1, param2=None, *args, **kwargs):
 def example_generator(n):
     """Generators have a ``Yields`` section instead of a ``Returns`` section.
 
-    Parameters
-    ----------
-    n : int
-        The upper limit of the range to generate, from 0 to `n` - 1.
+    Args:
+        n (int): The upper limit of the range to generate, from 0 to `n` - 1.
 
-    Yields
-    ------
-    int
-        The next number in the range of 0 to `n` - 1.
+    Yields:
+        int: The next number in the range of 0 to `n` - 1.
 
-    Examples
-    --------
-    Examples should be written in doctest format, and should illustrate how
-    to use the function.
+    Examples:
+        Examples should be written in doctest format, and should illustrate how
+        to use the function.
 
-    >>> print([i for i in example_generator(4)])
-    [0, 1, 2, 3]
+        >>> print([i for i in example_generator(4)])
+        [0, 1, 2, 3]
 
     """
     for i in range(n):
@@ -201,23 +160,16 @@ class ExampleError(Exception):
     Either form is acceptable, but the two should not be mixed. Choose one
     convention to document the __init__ method and be consistent with it.
 
-    Note
-    ----
-    Do not include the `self` parameter in the ``Parameters`` section.
+    Note:
+        Do not include the `self` parameter in the ``Args`` section.
 
-    Parameters
-    ----------
-    msg : str
-        Human readable string describing the exception.
-    code : :obj:`int`, optional
-        Numeric error code.
+    Args:
+        msg (str): Human readable string describing the exception.
+        code (:obj:`int`, optional): Error code.
 
-    Attributes
-    ----------
-    msg : str
-        Human readable string describing the exception.
-    code : int
-        Numeric error code.
+    Attributes:
+        msg (str): Human readable string describing the exception.
+        code (int): Exception error code.
 
     """
 
@@ -237,12 +189,9 @@ class ExampleClass(object):
     Properties created with the ``@property`` decorator should be documented
     in the property's getter method.
 
-    Attributes
-    ----------
-    attr1 : str
-        Description of `attr1`.
-    attr2 : :obj:`int`, optional
-        Description of `attr2`.
+    Attributes:
+        attr1 (str): Description of `attr1`.
+        attr2 (:obj:`int`, optional): Description of `attr2`.
 
     """
 
@@ -255,19 +204,14 @@ class ExampleClass(object):
         Either form is acceptable, but the two should not be mixed. Choose one
         convention to document the __init__ method and be consistent with it.
 
-        Note
-        ----
-        Do not include the `self` parameter in the ``Parameters`` section.
+        Note:
+            Do not include the `self` parameter in the ``Args`` section.
 
-        Parameters
-        ----------
-        param1 : str
-            Description of `param1`.
-        param2 : :obj:`list` of :obj:`str`
-            Description of `param2`. Multiple
-            lines are supported.
-        param3 : :obj:`int`, optional
-            Description of `param3`.
+        Args:
+            param1 (str): Description of `param1`.
+            param2 (:obj:`int`, optional): Description of `param2`. Multiple
+                lines are supported.
+            param3 (:obj:`list` of :obj:`str`): Description of `param3`.
 
         """
         self.attr1 = param1
@@ -275,7 +219,7 @@ class ExampleClass(object):
         self.attr3 = param3  #: Doc comment *inline* with attribute
 
         #: list of str: Doc comment *before* attribute, with type specified
-        self.attr4 = ["attr4"]
+        self.attr4 = ['attr4']
 
         self.attr5 = None
         """str: Docstring *after* attribute, with type specified."""
@@ -283,7 +227,7 @@ class ExampleClass(object):
     @property
     def readonly_property(self):
         """str: Properties should be documented in their getter method."""
-        return "readonly_property"
+        return 'readonly_property'
 
     @property
     def readwrite_property(self):
@@ -293,7 +237,7 @@ class ExampleClass(object):
         If the setter method contains notable behavior, it should be
         mentioned here.
         """
-        return ["readwrite_property"]
+        return ['readwrite_property']
 
     @readwrite_property.setter
     def readwrite_property(self, value):
@@ -302,20 +246,14 @@ class ExampleClass(object):
     def example_method(self, param1, param2):
         """Class methods are similar to regular functions.
 
-        Note
-        ----
-        Do not include the `self` parameter in the ``Parameters`` section.
+        Note:
+            Do not include the `self` parameter in the ``Args`` section.
 
-        Parameters
-        ----------
-        param1
-            The first parameter.
-        param2
-            The second parameter.
+        Args:
+            param1: The first parameter.
+            param2: The second parameter.
 
-        Returns
-        -------
-        bool
+        Returns:
             True if successful, False otherwise.
 
         """
