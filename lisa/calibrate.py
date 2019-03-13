@@ -50,7 +50,7 @@ def find_attribute_dict(G: nx.DiGraph, node1: NodeID, node2: NodeID, endnode: No
         endnode (NodeID): Final node identifier for the last node in the path to help with distance calculation
     
     Returns:
-        attribute_dict (dict): 
+        attribute_dict (dict): dictionary mapping attributes to values
     """
     edgeID = (node1, node2)
     attribute_dict = dict(G.edges[edgeID])
@@ -58,9 +58,16 @@ def find_attribute_dict(G: nx.DiGraph, node1: NodeID, node2: NodeID, endnode: No
     
     return attribute_dict
     
-def create_dataframe(G, paths, feature_list):
-    """
-    Loops through each node in the path and gets the considered features in the dataframe
+def create_dataframe(G: nx.DiGraph, paths: list, feature_list: list):
+    """Create the pandas dataframe that is compatible with pylogit
+    
+    Args:
+        G (nx.DiGraph): DiGraph representation of the road network
+        paths (list[NodeID]): chosen list of nodeIDs the biker visited
+        feature_list (list[str]): list of features present G.nodes and G.edges output
+    
+    Returns:
+        (dataframe, specs, spec_names): Pandas dataframe and spec settings needed to run pylogit model
     """
     n_feats = len(feature_list)
     choice_features = []
@@ -126,9 +133,25 @@ def create_dataframe(G, paths, feature_list):
         spec_names[spec] = spec
         specs[spec] = 'all_same'
         df[spec] = choice_features_overall[:,i]
-    return (df, n_feats, specs, spec_names)
+    print("specs", specs)
+    print("spec_names", spec_names)
+    return (df, specs, spec_names)
 
-def create_model(dataframe, n_feats, specs, spec_names):
+def create_model(dataframe: pd.DataFrame, specs: OrderedDict, spec_names: OrderedDict):
+    """Fitting multinomial logit model to the dataframe choices with specifications
+    
+    Args:
+        dataframe (pd.DataFrame): Dataframe representation of the routes and the choices taken in our data
+        specs (OrderedDict): Each category with an 'all_same' value to make sure the column ID does not change for the same attribute
+        spec_names (OrderedDict): Customizable specs for each category for nesting cases
+    
+    Returns:
+        (fit_summary, summary): fit_summary is a dictionary that shows the overall model's fit, 
+                                summary is a dictionary that shows each input's fit in the model
+    """
+    assert (len(specs) == len(spec_names))
+    
+    n_feats = len(specs)
     # Fit to a multinomial logit model (MNL)
     choice_model = pl.create_choice_model(data=df,
                                             alt_id_col='alt_ids',
@@ -162,6 +185,8 @@ if __name__ == "__main__":
 
     G = Graph.from_file("boundgraph").DiGraph
     nodes = list(G.nodes)
+
+    # generate paths (replace with map-matching paths later)
     paths = []
     for i in range(3):
         start = choice(nodes)
@@ -169,8 +194,9 @@ if __name__ == "__main__":
         path = nx.shortest_path(G, start, end)
         paths.append(path)
     print("paths: ", paths)
-    featurelist = ['notAtGrade', 'stops', 'signal', 'pedsignal', 'rr', 'yield', "distance_efficiency"]
-    (df, n_feats, specs, spec_names) = create_dataframe(G, paths, featurelist)
-    a, b = create_model(df, n_feats, specs, spec_names)
+    featurelist = ["bike_lane", "separate_path", "speed_limit", "traffic_volume", "crosswalk", "turn", "distance_efficiency"]
+    
+    (df, specs, spec_names) = create_dataframe(G, paths, featurelist)
+    a, b = create_model(df, specs, spec_names)
     # print(a)
     # print(b)
