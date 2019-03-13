@@ -101,7 +101,7 @@ def add_data_from_gdb(g, filename: str):
                 'yield': 1 if gc == 17 else 0,
             }
 
-            intersection = match_single(coords, kd)
+            intersection = match_single(coords, kd, t=0.0001)
             nx.set_node_attributes(g.init_graph, {intersection: attrs})
 
             # set value for each node in expanded graph

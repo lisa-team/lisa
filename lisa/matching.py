@@ -7,16 +7,17 @@ coordinates to a path through the graph.
 """
 
 
-def match_single(coord, kd):
+def match_single(coord, kd, t=0.00001):
     """Match (long, lat) to closest osmnx graph node.
     Args:
         coord (Tuple[float, float]): the latitude and longitude to match
         kd (lisa.graph.KDWrapper): the kd tree built off init_graph
+        t (float): tolerance in degrees
     Returns:
         int: the best-match node ID
     """
     closest_node, d = kd.query_min_dist_nodes(coord)
-    if d > 0.00001:
+    if d > t:
         raise Exception('Closest node is not a match. d: ', d)
     return closest_node
 
