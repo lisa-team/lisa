@@ -169,7 +169,7 @@ if __name__ == "__main__":
         path = nx.shortest_path(G, start, end)
         paths.append(path)
     print("paths: ", paths)
-    featurelist = ["bike_lane", "separate_path", "speed_limit", "traffic_volume", "crosswalk", "turn", "distance_efficiency"]
+    featurelist = ['notAtGrade', 'stops', 'signal', 'pedsignal', 'rr', 'yield', "distance_efficiency"]
     (df, n_feats, specs, spec_names) = create_dataframe(G, paths, featurelist)
     a, b = create_model(df, n_feats, specs, spec_names)
     # print(a)
