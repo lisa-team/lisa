@@ -1,55 +1,74 @@
-# -*- coding: utf-8 -*-
 """ Functions used for map matching
 
 This module contains functions for matching long/lat coordinates to our graph
 representations. There are two main functions here, one for matching a single
 long/lat (for example a stop sign) to a node, and one for matching multiple
 coordinates to a path through the graph.
-
-Example:
-    TODO insert some examples if needed
-
 """
 
-from lisa.lisagraph import LISAGraph
-from typing import Tuple, List
 
-# TODO this file is mostly Uma and Nathan's I believe?
-
-
-def match_single(g: LISAGraph, coord: Tuple[float, float]):
-    """This is a single line describing function.
-
-    This is your more detailed breakdown of the functions inner workings if
-    necessary. This can be multiple lines, and is separated from the one liner
-    with a blank line.
-
+def match_single(coord, kd):
+    """Match (long, lat) to closest osmnx graph node.
     Args:
-        g (lisa.expansion.Graph): the graph to match onto
         coord (Tuple[float, float]): the latitude and longitude to match
-
+        kd: the kd tree built off init_graph
     Returns:
         int: the best-match node ID
-
     """
-    pass
+    closest_node, d = kd.query_min_dist_nodes(coord)
+    if d > 0.00001:
+        raise Exception('Closest node is not a match. d: ', d)
+    return closest_node
 
 
-def match_trace(g: LISAGraph, trace: List[Tuple[float, float]]):
-    """This is a single line describing function.
-
-    This is your more detailed breakdown of the functions inner workings if
-    necessary. This can be multiple lines, and is separated from the one liner
-    with a blank line.
-
+def match_trace(trace, kd, G):
+    """Match a list of (long,lat) coordinates to the most likely cycling route
+    in the osmnx graph.
     Args:
-        g (lisa.expansion.Graph): the graph to match onto
-        trace (List[Tuple[float, float]]): a series of (lat, long) points to
+        trace (List[Tuple[float, float]]): a list of (lat, long) points to
             match
-
+        kd: the kd tree built off init_graph
     Returns:
         [int]: the list of best match node IDs
-
     """
-    pass
 
+    def get_closest_osmnx_path():
+        """
+        For each (long,lat) in map_box_path, return the closest node in the
+        osmnx graph
+        Args:
+            map_box_path (List[Tuple[float, float]]): a list of (lat, long)
+                coordinates
+            kd: the kd tree built off init_graph
+        Returns:
+            (List[Tuple[float, float]]): the list of best match node IDs
+        """
+        path = []
+        for coord in trace:
+            closest_node, d = kd.query_min_dist_nodes(coord)
+            if d > 0.00001:
+                continue
+            path.append(closest_node)
+        return path
+
+    def is_valid_path(osmnx_path):
+        """
+        Check if osmnx_path is valid.
+        Args:
+            osmnx_path (List[Tuple[float, float]]): a list of (lat, long)
+                coordinates
+        Returns:
+            (List[Tuple[float, float]]): the input list
+        """
+        for i in range(0, len(osmnx_path)-1):
+            curr_node = osmnx_path[i]
+            next_node = osmnx_path[i+1]
+            neighbors = G.neighbors(curr_node)
+            if next_node not in neighbors:
+                print('Nodes do not form valid path')
+                return
+        return osmnx_path
+
+    osmnx_match = get_closest_osmnx_path()
+    if is_valid_path(osmnx_match):
+        return osmnx_match
