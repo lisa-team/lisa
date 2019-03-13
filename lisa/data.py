@@ -10,9 +10,14 @@ Example:
 """
 
 # TODO some of what Nathan, Uma, and Annie have been writing goes here
-from random import random, randrange, choice
+import lisa
 import networkx as nx
+import fiona
+
+from random import random, randrange, choice
 from copy import deepcopy
+from enum import Enum
+
 
 def shapefile_to_osmnx_graph(blah: str, blah2: str, blah3: int):
     """This is a single line describing function.
@@ -31,6 +36,53 @@ def shapefile_to_osmnx_graph(blah: str, blah2: str, blah3: int):
 
     """
     pass
+
+
+class IntersectionGradeCode(Enum):
+    """Enumerates intersection grade codes
+
+    reference: https://wiki.ddot.dc.gov/display/GIS/DDOT%27s+Transportation+Data+Products
+    """
+    AtGrade = 0
+    NotAtGrade = 1
+    Undefined = 2
+    Uncontrolled = 10
+    TwoWayStop = 11
+    AllWayStop = 12
+    SignalizedWithPedSignal = 13
+    SignalizedWithNoPedSignal = 14
+    SignalizedRRCrossing = 15
+    SignedRRCrossing = 16
+    YieldSign = 17
+
+
+def add_data_from_gdb(G: lisa.graph.Graph, filename: str):
+    """Tags the input graph with data from the supplied geodatabase
+
+    For each feature in the "BlockIntersection" layer of the geodatabase the
+    closest intersection is found in G and all intersection edges are tagged
+    with the Intersection Grade Code for that intersection.
+
+    reference: https://wiki.ddot.dc.gov/display/GIS/DDOT%27s+Transportation+Data+Products
+
+    Args:
+        G (lisa.graph.Graph): the graph to be tagged with intersection attributes
+        filename (str): a relative filepath to the source geodatabas (.gbd file)
+
+    Returns:
+        None
+    """
+    layers_list = fiona.listlayers(filename)
+    try:
+        block_intersection_layer_i = layers_list.index("BlockIntersection")
+    except ValueError as e:
+        print("Supplied geodatabase file has no 'BlockIntersection' layer")
+        raise e
+
+    with fiona.open(filename, 'r', layer=block_intersection_layer_i) as inp:
+        for f in inp:
+            grade = f['properties']['GRADE']
+            coords = f['geometry']['coordinates']
 
 
 class StreetDataGenerator:
@@ -129,6 +181,7 @@ class StreetDataGenerator:
         attributes = cls().generate_attributes(g_new)
         nx.set_edge_attributes(g_new, values=attributes)
         return g_new
+
 
 def add_random_attributes(g: nx.DiGraph):
     """[summary]
