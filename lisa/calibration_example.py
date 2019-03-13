@@ -1,7 +1,7 @@
 import pylogit as pl
 import pandas as pd
 import numpy as np
-from Graph_Wrapper import *
+from graph import *
 import random
 from collections import OrderedDict
 import sys
@@ -10,11 +10,12 @@ from random import random, randrange, choice
 
 def find_attribute_dict(G, startNode, endNode):
     """
-        Why can't I figure this out? There has to be a better way.
+        Gets attributes of the edge between two nodes
     """
-    return {"traffic_volume": random()*1000, "speed_limit": randrange(25,36,5)}
-
-def create_dataframe(G, path, feature_list):
+    edgeID = (startNode, endNode)
+    return dict(G.edges[edgeID])
+    
+def create_dataframe(G, paths, feature_list):
     """
     Loops through each node in the path and gets the considered features in the dataframe
     """
@@ -24,28 +25,31 @@ def create_dataframe(G, path, feature_list):
     choice_indicators = []
     choice_ids = []
 
-    for i in range(len(path)-1):
+    for path_index in range(len(paths)):
+        path = paths[path_index]
 
-        # append all the edge options to a list of lists called choice_features
-        current_node = path[i]
-        neighbors = list(G.DiGraph.neighbors(current_node))
-        n_choices = len(neighbors)
-        observation_ids.append(i*np.ones((n_choices,))) 
-        # 'i' is the "index" of the observation, or the reason why we know which observation is which
-        for neighbor in neighbors:
-            current_attribute_dict = find_attribute_dict(G, current_node, neighbor)
-            # iteratively adding each feature value to the observation
-            current_observation_choice_features = []
-            for feature in feature_list:
-                current_observation_choice_features.append(current_attribute_dict[feature])
-            choice_features.append(current_observation_choice_features)
+        for i in range(len(path)-1):
 
-        # marking the choiceID's choice as '1' among zeros
-        choice_indicators.append(np.zeros((n_choices,)))
-        chosen = neighbors.index(path[i+1])
-        choice_indicators[-1][chosen] = 1
-        # All the possible choices out at this observation:
-        choice_ids.append(np.arange(n_choices))
+            # append all the edge options to a list of lists called choice_features
+            current_node = path[i]
+            neighbors = list(G.neighbors(current_node))
+            n_choices = len(neighbors)
+            observation_ids.append(i*np.ones((n_choices,))) 
+            # 'i' is the "index" of the observation, or the reason why we know which observation is which
+            for neighbor in neighbors:
+                current_attribute_dict = find_attribute_dict(G, current_node, neighbor)
+                # iteratively adding each feature value to the observation
+                current_observation_choice_features = []
+                for feature in feature_list:
+                    current_observation_choice_features.append(current_attribute_dict[feature])
+                choice_features.append(current_observation_choice_features)
+
+            # marking the choiceID's choice as '1' among zeros
+            choice_indicators.append(np.zeros((n_choices,)))
+            chosen = neighbors.index(path[i+1])
+            choice_indicators[-1][chosen] = 1
+            # All the possible choices out at this observation:
+            choice_ids.append(np.arange(n_choices))
 
     # preparing columns for the dataframe (long) format
     overall_observation_ids = np.concatenate(observation_ids)
@@ -81,7 +85,7 @@ def create_dataframe(G, path, feature_list):
     # The # of rows w/ the same observation = # of choices the biker makes
     # The choices are either 1 or 0. Each observation makes a 
 
-    # The ext few lines just mean the columns will be consistent across choices
+    # The next few lines just mean the columns will be consistent across choices
     spec_names = OrderedDict()
     specs = OrderedDict()
     for i in range(n_feats):
@@ -122,10 +126,17 @@ def create_model(dataframe,n_feats, specs, spec_names):
 
 if __name__ == "__main__":
 
-    bbox = Bbox(38.88300016, 38.878726840000006, -77.09939832, -77.10500768)
-    G = Graph.from_bound(bbox)
-    start = 0
-    end = 1
-    path = nx.shortest_path(G.DiGraph, start, end)
-    (df, n_feats, specs, spec_names) = create_dataframe(G, path, ["traffic_volume", "speed_limit"])
+    # bbox = Bbox(38.88300016, 38.878726840000006, -77.09939832, -77.10500768)
+    # G = Graph(bbox)
+    # G.save("boundgraph")
+
+    G = Graph.from_file("boundgraph").DiGraph
+    nodes = list(G.node)
+    # print(type(nodes))
+    start = choice(nodes)
+    end = choice(nodes)
+    # print("start, end: ", start, end)
+    path = nx.shortest_path(G, start, end)
+    print("path: ", path)
+    (df, n_feats, specs, spec_names) = create_dataframe(G, [path], ["traffic_volume", "speed_limit"])
     create_model(df, n_feats, specs, spec_names)
