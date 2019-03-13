@@ -5,13 +5,14 @@ representations. There are two main functions here, one for matching a single
 long/lat (for example a stop sign) to a node, and one for matching multiple
 coordinates to a path through the graph.
 """
+import lisa
 
 
-def match_single(coord, kd):
+def match_single(coord, kd: lisa.graph.KDTreeWrapper):
     """Match (long, lat) to closest osmnx graph node.
     Args:
         coord (Tuple[float, float]): the latitude and longitude to match
-        kd: the kd tree built off init_graph
+        kd (lisa.graph.KDWrapper): the kd tree built off init_graph
     Returns:
         int: the best-match node ID
     """

@@ -41,6 +41,7 @@ if __name__ == "__main__":
     # make_osmnx_graph("Washington DC",
     #                  '/home/udesai/SCOPE/lisa/lisa/dc.pickle')
     G = load_osmnx_graph('dc.pickle')
-    kd = KDTreeWrapper(G.DiGraph)
+    kd = G.dg_min_dist
+    # kd = KDTreeWrapper(G.DiGraph)
     paths = get_ride_report_paths()
     single = match_single(paths[0][0], kd)

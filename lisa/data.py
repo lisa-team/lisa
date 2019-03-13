@@ -11,12 +11,14 @@ Example:
 
 # TODO some of what Nathan, Uma, and Annie have been writing goes here
 import lisa
+from lisa.matching import match_single
 import networkx as nx
 import fiona
 
 from random import random, randrange, choice
 from copy import deepcopy
 from enum import Enum
+from itertools import permutations
 
 
 def shapefile_to_osmnx_graph(blah: str, blah2: str, blah3: int):
@@ -38,7 +40,7 @@ def shapefile_to_osmnx_graph(blah: str, blah2: str, blah3: int):
     pass
 
 
-class IntersectionGradeCode(Enum):
+class IntersectionGrade(Enum):
     """Enumerates intersection grade codes
 
     reference: https://wiki.ddot.dc.gov/display/GIS/DDOT%27s+Transportation+Data+Products
@@ -56,7 +58,7 @@ class IntersectionGradeCode(Enum):
     YieldSign = 17
 
 
-def add_data_from_gdb(G: lisa.graph.Graph, filename: str):
+def add_data_from_gdb(g: lisa.graph.Graph, filename: str):
     """Tags the input graph with data from the supplied geodatabase
 
     For each feature in the "BlockIntersection" layer of the geodatabase the
@@ -66,12 +68,14 @@ def add_data_from_gdb(G: lisa.graph.Graph, filename: str):
     reference: https://wiki.ddot.dc.gov/display/GIS/DDOT%27s+Transportation+Data+Products
 
     Args:
-        G (lisa.graph.Graph): the graph to be tagged with intersection attributes
+        g (lisa.graph.Graph): the graph to be tagged with intersection attributes
         filename (str): a relative filepath to the source geodatabas (.gbd file)
 
     Returns:
         None
     """
+    kd = lisa.graph.KDWrapper(g)
+
     layers_list = fiona.listlayers(filename)
     try:
         block_intersection_layer_i = layers_list.index("BlockIntersection")
@@ -81,8 +85,32 @@ def add_data_from_gdb(G: lisa.graph.Graph, filename: str):
 
     with fiona.open(filename, 'r', layer=block_intersection_layer_i) as inp:
         for f in inp:
-            grade = f['properties']['GRADE']
             coords = f['geometry']['coordinates']
+            gc = f['properties']['GRADE']
+
+            if gc not in [0, 1, 2, 10, 11, 12, 13, 14, 15, 16, 17]:
+                print("Encountered unknown grade code ", gc)
+                raise ValueError("Unknown intersection grade code {}".format(gc))
+
+            attrs = {
+                'grade': gc,
+
+                'notAtGrade': 1 if gc == 1 else 0,
+                'stops': 4 if gc == 12 else 2 if gc == 11 else 0,
+                'signal': 1 if gc in [13, 14] else 0,
+                'pedsignal': 1 if gc == 14 else 0,
+                'rr': 1 if gc == 15 else 0,
+                'yield': 1 if gc == 17 else 0,
+            }
+
+            intersection = match_single(coords, kd)
+            nx.set_node_attributes(g.init_graph, {intersection: attrs})
+
+            # set value for each node in expanded graph
+            nodes = g.node_map[intersection]
+            for p in permutations(nodes, 2):
+                if g.DiGraph.has_edge(p):
+                    g.DiGraph.set_edge_attributes({p: attrs})
 
 
 class StreetDataGenerator:
