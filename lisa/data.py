@@ -10,8 +10,7 @@ Example:
 """
 
 # TODO some of what Nathan, Uma, and Annie have been writing goes here
-import lisa
-from lisa.matching import match_single
+from matching import match_single
 import networkx as nx
 import fiona
 
@@ -58,7 +57,7 @@ class IntersectionGrade(Enum):
     YieldSign = 17
 
 
-def add_data_from_gdb(g: lisa.graph.Graph, filename: str):
+def add_data_from_gdb(g, filename: str):
     """Tags the input graph with data from the supplied geodatabase
 
     For each feature in the "BlockIntersection" layer of the geodatabase the
@@ -74,7 +73,7 @@ def add_data_from_gdb(g: lisa.graph.Graph, filename: str):
     Returns:
         None
     """
-    kd = lisa.graph.KDWrapper(g)
+    kd = g.init_min_dist
 
     layers_list = fiona.listlayers(filename)
     try:
@@ -94,7 +93,6 @@ def add_data_from_gdb(g: lisa.graph.Graph, filename: str):
 
             attrs = {
                 'grade': gc,
-
                 'notAtGrade': 1 if gc == 1 else 0,
                 'stops': 4 if gc == 12 else 2 if gc == 11 else 0,
                 'signal': 1 if gc in [13, 14] else 0,
