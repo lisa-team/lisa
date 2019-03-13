@@ -109,16 +109,25 @@ def create_model(dataframe,n_feats, specs, spec_names):
     choice_model.fit_mle(np.zeros(n_feats))
 
     # Look at the estimation results
-    # choice_model.get_statsmodels_summary()
+    # a = choice_model.get_statsmodels_summary()
 
+
+    cmfs = choice_model.fit_summary
+    cms = choice_model.summary
+
+
+    summary = (cms.to_dict(orient="index"))
+    # print("=============")
+    # print(type(b))
+    fit_summary = (cmfs.to_dict())
     # Look at other all results at the same time
-    choice_model.print_summaries()
+    # choice_model.print_summaries()
 
 
 
     # Look at the general and goodness of fit statistics
-    choice_model.fit_summary
-    return
+    # choice_model.fit_summary
+    return fit_summary, summary
 
 
 
@@ -130,13 +139,15 @@ if __name__ == "__main__":
     # G = Graph(bbox)
     # G.save("boundgraph")
 
-    G = Graph.from_file("boundgraph").DiGraph
-    nodes = list(G.node)
+    G = Graph.from_file("boundgraph")
+    nodes = list(G.DiGraph.nodes)
     # print(type(nodes))
-    start = choice(nodes)
-    end = choice(nodes)
+    start = 131 #choice(nodes)
+    end = 354 #choice(nodes)
     # print("start, end: ", start, end)
-    path = nx.shortest_path(G, start, end)
+    path = nx.shortest_path(G.DiGraph, start, end)
     print("path: ", path)
-    (df, n_feats, specs, spec_names) = create_dataframe(G, [path], ["traffic_volume", "speed_limit"])
-    create_model(df, n_feats, specs, spec_names)
+    (df, n_feats, specs, spec_names) = create_dataframe(G.DiGraph, [path], ["traffic_volume", "speed_limit"])
+    a, b = create_model(df, n_feats, specs, spec_names)
+    print(a)
+    print(b)
