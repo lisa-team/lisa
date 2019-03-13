@@ -74,7 +74,7 @@ def create_dataframe(G: nx.DiGraph, paths: list, feature_list: list):
     observation_ids = []
     choice_indicators = []
     choice_ids = []
-    counter = 0
+    observation_id = 0
 
     for path_index in range(len(paths)):
         
@@ -87,7 +87,7 @@ def create_dataframe(G: nx.DiGraph, paths: list, feature_list: list):
             end_node = path[-1]
             neighbors = list(G.neighbors(current_node))
             n_choices = len(neighbors)
-            observation_ids.append(counter*np.ones((n_choices,))) 
+            observation_ids.append(observation_id*np.ones((n_choices,))) 
             # 'i' is the "index" of the observation, or the reason why we know which observation is which
             for neighbor in neighbors:
                 current_attribute_dict = find_attribute_dict(G, current_node, neighbor, end_node)
@@ -111,7 +111,7 @@ def create_dataframe(G: nx.DiGraph, paths: list, feature_list: list):
             # All the possible choices out at this observation:
             choice_ids.append(np.arange(n_choices))
             
-            counter += 1
+            observation_id += 1
 
     # preparing columns for the dataframe (long) format
     overall_observation_ids = np.concatenate(observation_ids)
@@ -177,6 +177,32 @@ def create_model(dataframe: pd.DataFrame, specs: OrderedDict, spec_names: Ordere
 
     return fit_summary, summary
 
+def sort_input_attributes(summary_dict: dict):
+    """Takes in the fitted model summary and ranks the input variables based on model preference and error range consistency
+
+        I'm assuming (parameter +- std_err) needs to be all positive or all negative. If not, don't return it as a weighted attribute
+    
+    Args:
+        summary_dict (dict): 2nd output from from create_model() method
+    
+    Returns:
+        weights (dict): maps variables to their weights
+    """
+    weights = {}
+
+    # try to reject any values with large errors ()
+    for attribute in summary_dict:
+        std_error = summary_dict[attribute]['std_err']
+        weight = summary_dict[attribute]['parameters']
+        lower_bound = weight - std_error
+        upper_bound = weight + std_error
+        
+        if (((lower_bound <= 0) and (upper_bound <= 0)) or ((lower_bound >= 0) and (upper_bound >= 0))):
+            weights[attribute] = weight
+    
+    return weights
+
+
 if __name__ == "__main__":
 
     # bbox = Bbox(38.88300016, 38.878726840000006, -77.09939832, -77.10500768)
@@ -200,3 +226,6 @@ if __name__ == "__main__":
     a, b = create_model(df, specs, spec_names)
     # print(a)
     # print(b)
+    print(sort_input_attributes(b))
+
+    
