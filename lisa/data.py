@@ -10,7 +10,9 @@ Example:
 """
 
 # TODO some of what Nathan, Uma, and Annie have been writing goes here
-from matching import match_single
+import math
+
+from matching import match_single, CoordinateMatchError
 import networkx as nx
 import fiona
 
@@ -64,6 +66,8 @@ def add_data_from_gdb(g, filename: str):
     closest intersection is found in G and all intersection edges are tagged
     with the Intersection Grade Code for that intersection.
 
+    This program also assumes coordinates in seconds, not degrees
+
     reference: https://wiki.ddot.dc.gov/display/GIS/DDOT%27s+Transportation+Data+Products
 
     Args:
@@ -73,7 +77,6 @@ def add_data_from_gdb(g, filename: str):
     Returns:
         None
     """
-    kd = g.init_min_dist
 
     layers_list = fiona.listlayers(filename)
     try:
@@ -83,13 +86,25 @@ def add_data_from_gdb(g, filename: str):
         raise e
 
     with fiona.open(filename, 'r', layer=block_intersection_layer_i) as inp:
+        max_x = -math.inf
+        min_x = math.inf
+        max_y = -math.inf
+        min_y = math.inf
+
         for f in inp:
             coords = f['geometry']['coordinates']
-            gc = f['properties']['GRADE']
+            coords = coords[0]/(60*60*2), coords[1]/(60*60)
+            max_x = max(max_x, coords[0])
+            min_x = min(min_x, coords[0])
+            max_y = max(max_y, coords[1])
+            min_y = min(min_y, coords[1])
+
+            gc = f['properties']['GRADE']  # grade code
 
             if gc not in [0, 1, 2, 10, 11, 12, 13, 14, 15, 16, 17]:
-                print("Encountered unknown grade code ", gc)
-                raise ValueError("Unknown intersection grade code {}".format(gc))
+                # raise ValueError("Unknown intersection grade code {}".format(gc))
+                print("Unknown intersection grade code {}".format(gc))
+                continue
 
             attrs = {
                 'grade': gc,
@@ -101,7 +116,11 @@ def add_data_from_gdb(g, filename: str):
                 'yield': 1 if gc == 17 else 0,
             }
 
-            intersection = match_single(coords, kd, t=0.0001)
+            try:
+                intersection = match_single(coords, g.init_min_dist)
+            except CoordinateMatchError as e:
+                print(e)
+                continue
             nx.set_node_attributes(g.init_graph, {intersection: attrs})
 
             # set value for each node in expanded graph
@@ -109,6 +128,8 @@ def add_data_from_gdb(g, filename: str):
             for p in permutations(nodes, 2):
                 if g.DiGraph.has_edge(p):
                     g.DiGraph.set_edge_attributes({p: attrs})
+        print("x range: [{}, {}]".format(min_x, max_x))
+        print("y range: [{}, {}]".format(min_y, max_y))
 
 
 class StreetDataGenerator:

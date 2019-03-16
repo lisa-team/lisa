@@ -7,6 +7,11 @@ coordinates to a path through the graph.
 """
 
 
+class CoordinateMatchError(Exception):
+    """Exception for unfound coordinate/graph match"""
+    pass
+
+
 def match_single(coord, kd, t=0.00001):
     """Match (long, lat) to closest osmnx graph node.
     Args:
@@ -18,7 +23,8 @@ def match_single(coord, kd, t=0.00001):
     """
     closest_node, d = kd.query_min_dist_nodes(coord)
     if d > t:
-        raise Exception('Closest node is not a match. d: ', d)
+        raise CoordinateMatchError('Closest node is not a match. d: ', d)
+    print("SUCCESSFUL MATCH closest node match d: ", d)
     return closest_node
 
 

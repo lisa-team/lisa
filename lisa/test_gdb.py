@@ -1,5 +1,6 @@
 import os
 import pytest
+import matplotlib.pyplot as plt
 from data import add_data_from_gdb
 from graph import Graph, Name
 
@@ -35,4 +36,5 @@ def verify_node_attirbutes(g):
 
     assert before != after
 
-verify_node_attirbutes(g())
+if __name__ == "__main__":
+    verify_node_attirbutes(g())
