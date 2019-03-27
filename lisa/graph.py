@@ -253,8 +253,8 @@ class Graph(object):
         self.DiGraph = graph_builder.g_expd_int
         self.init_graph = graph_builder.g_init
         self.node_map = graph_builder.init_to_expd_int_nodes
-        self._init_min_dist = graph_builder.init_kd_tree
-        self._dg_min_dist = graph_builder.dg_kd_tree
+        self.init_min_dist = graph_builder.init_kd_tree
+        self.dg_min_dist = graph_builder.dg_kd_tree
 
     @staticmethod
     def from_file(filepath: str):
