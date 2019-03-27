@@ -82,8 +82,8 @@ def update_nodes_xy(
     """
     dist = 0.00001  # change to 10 feet once you figure out units
     for segment in segments:
-        if segment[2]["has_comp"]:
-            unit_vec = segment_unit_vec(nodes_xy, segment)
+        unit_vec = segment_unit_vec(nodes_xy, segment)
+        if segment[2]["has_comp"]:    
             perp_vec = np.array([unit_vec[1], unit_vec[0] * -1])
             nodes_xy[segment[0]] = nodes_xy[segment[0]] + (
                 (unit_vec * dist) + (perp_vec * dist / 2)

@@ -361,6 +361,7 @@ class Graph(object):
 
         fig, ax = ox.plot.plot_graph(G, show=False, close=False, edge_color=ec, node_color=nc)
 
+        ax.set_title(title)
         ax.legend(handles=legend_elements)
 
         return fig, ax
@@ -497,16 +498,20 @@ class Graph_Hover(object):
         self.fig.canvas.mpl_connect("motion_notify_event", self.hover)
         plt.show()
 
+    def save_fig(self, filename):
+        plt.savefig(filename+'.png')
 
 if __name__ == "__main__":
-    bbox = Bbox(38.883_000_16, 38.878_726_840_000_006, -77.099_398_32, -77.105_007_68)
+    # bbox = Bbox(38.883_000_16, 38.878_726_840_000_006, -77.099_398_32, -77.105_007_68)
+    bbox = Bbox(38.921288, 38.919085, -77.029480, -77.034512)
+    # bbox = Bbox(38.898191, 38.894810, -77.003528, -77.010062)
     G = Graph(bbox)
     print(f"First 100 nodes: {list(G.DiGraph.nodes)[:100]}\n")
     print(f"First 100 edges: {list(G.DiGraph.edges)[:100]}\n")
 
-    init_graph_node = list(G.init_graph.nodes)[30]  # pink node
-    expanded_nodes = G.node_map[init_graph_node]  # yellow nodes
-    print(f"Pink node: {init_graph_node} -> Yellow nodes: {expanded_nodes}\n")
+    # init_graph_node = list(G.init_graph.nodes)[30]  # pink node
+    # expanded_nodes = G.node_map[init_graph_node]  # yellow nodes
+    # print(f"Pink node: {init_graph_node} -> Yellow nodes: {expanded_nodes}\n")
 
     def edge_filter(data):
         if data.get("separate_path"):
@@ -530,21 +535,18 @@ if __name__ == "__main__":
     edge_and_nodes = G.create_legend(edge_legend=edge_legend, node_legend=node_legend)
     only_nodes = G.create_legend(edge_legend=None, node_legend=node_legend)
 
-    fig, ax1 = G.highlight_graph(edge_filter_function=edge_filter,
-                                 node_filter_function=node_filter, legend_elements=edge_and_nodes, title="Test title")
+    # fig, ax1 = G.highlight_graph(edge_filter_function=edge_filter,
+    #                              node_filter_function=node_filter, legend_elements=edge_and_nodes, title="Test title")
 
-    # ax1.scatter([-77.102, -77.103], [38.88,38.881], color='b')
 
-    # pos = G.create_pos()
-    # edge_labels = G.create_edge_labels(["separate_path", "crosswalk"])
-    # nx.draw_networkx_edge_labels(G.DiGraph, pos, ax = ax1, edge_labels = edge_labels, alpha = 0.5, rotate = False)
+    # hover = Graph_Hover(graph=G, fig=fig, ax=ax1)
+    # hover.save_fig("test")
+    # hover.display_graph()
 
-    hover = Graph_Hover(graph=G, fig=fig, ax=ax1)
-    hover.display_graph()
-
-    fig, ax2 = G.highlight_graph(
-        edge_filter_function=None, node_filter_function=node_filter, legend_elements=only_nodes, title="Test title")
+    # G.plot_simple_graph()
+    fig, ax2 = G.highlight_graph(edge_filter_function=None, node_filter_function=None, legend_elements=None, title = "")
 
     hover = Graph_Hover(graph=G, fig=fig, ax=ax2)
-    hover.add_scatter(x_s=[-77.102, -77.103], y_s=[38.88, 38.881], color='b')
+    # hover.add_scatter(x_s=[-77.102, -77.103], y_s=[38.88, 38.881], color='b')
+    # hover.save_fig("E St and North Capitol St (1)")
     hover.display_graph()
