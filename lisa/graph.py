@@ -138,7 +138,7 @@ class GraphBuilder(object):
         [type]: [description]
     """
 
-    def __init__(self, bound: Bound):
+    def __init__(self, bound: Bound, mire_graph: nx.Graph = None):
         """The "run" function to make Graph objects
 
         Args:
@@ -149,7 +149,10 @@ class GraphBuilder(object):
         """
         # initialize graph from given bounx
         self.bound = bound
-        self.g_init = self.initialize_map(self.bound)
+        if not mire_graph and self.bound:
+            self.g_init = self.initialize_map(self.bound)
+        else:
+            self.g_init = mire_graph 
 
         # expand graph, add data (currently random)
         g_expd = expand_graph(self.g_init)
@@ -243,13 +246,16 @@ class Graph(object):
     osmnx visualization features
     """
 
-    def __init__(self, bound: Union[Name, Bbox]):
+    def __init__(self, bound: Union[Name, Bbox], mire_graph: nx.Graph = None):
         """[summary]
 
         Args:
             bound (Union[Name, Bbox]): [description]
         """
-        graph_builder = GraphBuilder(bound)
+        if bound:
+            graph_builder = GraphBuilder(bound)
+        else:
+            graph_builder = GraphBuilder(bound = None, mire_graph = mire_graph)
         self.DiGraph = graph_builder.g_expd_int
         self.init_graph = graph_builder.g_init
         self.node_map = graph_builder.init_to_expd_int_nodes
