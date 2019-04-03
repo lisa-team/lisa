@@ -10,6 +10,25 @@ from graph import *
 import networkx as nx
 
 
+def get_attributes_from_grade(grade):
+    attrs = None
+    if grade:
+        gc = int(grade)
+        attrs = {
+        'grade': gc,
+        'notAtGrade': 1 if gc == 1 else 0,
+        'stops': 4 if gc == 12 else 2 if gc == 11 else 0,
+        'signal': 1 if gc in [13, 14] else 0,
+        'pedsignal': 1 if gc == 14 else 0,
+        'rr': 1 if gc == 15 else 0,
+        'yield': 1 if gc == 17 else 0,
+        }
+    return attrs
+
+
+
+
+
 if __name__ == "__main__":
     filename = "WashingtonDCGraph.pkl"
 
@@ -58,7 +77,7 @@ if __name__ == "__main__":
 
                 if mire_xy[0][0] and mire_xy[1][0] and f['properties']['INTERSECTIONID'] != 'DCBoundary':
 
-                    mire_nodes.append((f['properties']['INTERSECTIONID'], {"x":mire_xy[0][0],"y":mire_xy[1][0], 'GRADE':f['properties']['GRADE']}))
+                    mire_nodes.append((f['properties']['INTERSECTIONID'], {"x":mire_xy[0][0],"y":mire_xy[1][0], 'attributes':get_attributes_from_grade(f['properties']['GRADE'])}))
                 else:
                     print( mire_xy[0][0], mire_xy[1][0])
 
@@ -116,12 +135,12 @@ if __name__ == "__main__":
     print("g2 init edges: ", list(g2.init_graph.edges(data=True))[0])
 
     print("g2 nodes: ", list(g2.DiGraph.nodes(data=True))[0])
-    print("g2 edges: ", list(g2.DiGraph.edges(data=True))[0])
+    print("g2 edges: ", list(g2.DiGraph.edges(data=True))[:10])
     # print("g2 node map: ", g2.node_map)
 
 
 
-    # g2.plot_graph()
+    g2.plot_graph()
 
 
 

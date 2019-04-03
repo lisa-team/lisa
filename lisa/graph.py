@@ -373,7 +373,7 @@ class Graph(object):
 
         return fig, ax
 
-    def show_graph(self, fig, ax):
+    def show_graph(self):
         plt.show()
 
     def create_pos(self):
@@ -510,7 +510,7 @@ class Graph_Hover(object):
 
 if __name__ == "__main__":
     # bbox = Bbox(38.883_000_16, 38.878_726_840_000_006, -77.099_398_32, -77.105_007_68)
-    bbox = Bbox("Washington, DC")
+    bbox = Name("Washington, DC")
     # bbox = Bbox(38.898191, 38.894810, -77.003528, -77.010062)
     G = Graph(bbox)
     print(f"First 100 nodes: {list(G.DiGraph.nodes)[:100]}\n")
@@ -551,9 +551,13 @@ if __name__ == "__main__":
     # hover.display_graph()
 
     # G.plot_simple_graph()
-    fig, ax2 = G.highlight_graph(edge_filter_function=None, node_filter_function=None, legend_elements=None, title = "")
+    # fig, ax2 = G.highlight_graph(edge_filter_function=None, node_filter_function=None, legend_elements=None, title = "")
+    # ax2.add_scatter([-77.102, -77.103], [38.88, 38.881], 'b')
 
-    hover = Graph_Hover(graph=G, fig=fig, ax=ax2)
+
+    # plt.show()
+
+    # hover = Graph_Hover(graph=G, fig=fig, ax=ax2)
     # hover.add_scatter(x_s=[-77.102, -77.103], y_s=[38.88, 38.881], color='b')
     # hover.save_fig("E St and North Capitol St (1)")
-    hover.display_graph()
+    # hover.display_graph()
