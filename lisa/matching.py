@@ -5,70 +5,148 @@ representations. There are two main functions here, one for matching a single
 long/lat (for example a stop sign) to a node, and one for matching multiple
 coordinates to a path through the graph.
 """
+from closest_node import nearest_node
+import networkx as nx
+import logging
+
+logging.basicConfig(level=logging.INFO,
+                    filename='matching.log',
+                    filemode='w',
+                    format='%(asctime)s - %(levelname)s - %(message)s',
+                    datefmt='%d-%b-%y %H:%M:%S')
 
 
-def match_single(coord, kd):
-    """Match (long, lat) to closest osmnx graph node.
+def match_single(coord, kd, G, error=0.00001):
+    """Match (long, lat) to closest osmnx graph node
+level=logging.DEBUGlevel=logging.DEBUG
     Args:
         coord (Tuple[float, float]): the latitude and longitude to match
-        kd: the kd tree built off init_graph
+        kd: KDTreeWrapper object
+        G: Graph object
+        error (float): degree of accuracy expected for each gps<->node match
     Returns:
-        int: the best-match node ID
+        int: the closest osmnx node ID
     """
-    closest_node, d = kd.query_min_dist_nodes(coord)
-    if d > 0.00001:
+    # closest_node, d = kd.query_min_dist_nodes(coord)
+    closest_node, d = nearest_node(coord, kd, G)
+    if d > error:
         raise Exception('Closest node is not a match. d: ', d)
     return closest_node
 
 
 def match_trace(trace, kd, G):
-    """Match a list of (long,lat) coordinates to the most likely cycling route
-    in the osmnx graph.
+    """Match a list of (long,lat) coordinates to the best match cycling route
+    in the osmnx graph
+
     Args:
         trace (List[Tuple[float, float]]): a list of (lat, long) points to
             match
-        kd: the kd tree built off init_graph
+        kd: KDTreeWrapper object
+        G: Graph object
     Returns:
-        [int]: the list of best match node IDs
+        list: the list of best match node IDs
     """
+    try:
+        osmnx_match = get_closest_osmnx_path(trace, kd, G)
+        match = connect_path(osmnx_match, G)
+        if is_valid_path(match, G):
+            return match
+    except Exception as e:
+        logging.info(e)
 
-    def get_closest_osmnx_path():
-        """
-        For each (long,lat) in map_box_path, return the closest node in the
-        osmnx graph
-        Args:
-            map_box_path (List[Tuple[float, float]]): a list of (lat, long)
-                coordinates
-            kd: the kd tree built off init_graph
-        Returns:
-            (List[Tuple[float, float]]): the list of best match node IDs
-        """
-        path = []
-        for coord in trace:
-            closest_node, d = kd.query_min_dist_nodes(coord)
-            if d > 0.00001:
-                continue
-            path.append(closest_node)
-        return path
 
-    def is_valid_path(osmnx_path):
-        """
-        Check if osmnx_path is valid.
-        Args:
-            osmnx_path (List[Tuple[float, float]]): a list of (lat, long)
-                coordinates
-        Returns:
-            (List[Tuple[float, float]]): the input list
-        """
-        for i in range(0, len(osmnx_path)-1):
-            curr_node = osmnx_path[i]
-            next_node = osmnx_path[i+1]
-            neighbors = G.neighbors(curr_node)
-            if next_node not in neighbors:
-                print('Nodes do not form valid path')
-                return
-        return osmnx_path
+def get_closest_osmnx_path(trace, kd, G):
+    """Get the closest node for each coord in trace
 
-    osmnx_match = get_closest_osmnx_path()
-    if is_valid_path(osmnx_match):
-        return osmnx_match
+    Args:
+        trace: a list of (lat, long) coordinates
+        kd: KDTreeWrapper object
+        G: Graph object
+    Returns:
+        path(list): the list of osmnx node IDs
+    """
+    path = []
+    for coord in trace:
+        closest_node, d = nearest_node(coord, kd, G)
+        if d > 0.00001:
+            continue
+        path.append(closest_node)
+    if len(path) < 1:
+        raise Exception('All nodes missed')
+    return path
+
+
+def is_valid_path(osmnx_path, G):
+    """Check if osmnx_path is valid.
+
+    Args:
+        osmnx_path (List[Tuple[float, float]]): a list of (lat, long)
+            coordinates
+        G: Graph object
+    Returns:
+        boolean: True if node ids are connected to form valid osmnx path,
+            otherwise False
+    """
+    for i in range(0, len(osmnx_path)-1):
+        curr = osmnx_path[i]
+        nxt = osmnx_path[i+1]
+        if not are_neighbors(curr, nxt, G):
+            return False
+    return True
+
+
+def connect_path(raw_path, G):
+    """Convert raw_path to connected osmnx path.
+
+    Args:
+        raw_path (List[Tuple[float, float]]): a list of (lat, long)
+            coordinates
+        G: Graph object
+    Returns:
+        (List[Tuple[float, float]]): the input list
+    """
+    path = [raw_path[0]]
+    for i in range(0, len(raw_path)-1):
+        curr = raw_path[i]
+        nxt = raw_path[i+1]
+        if are_neighbors(curr, nxt, G):
+            path.append(nxt)
+        else:
+            path += make_best_guess(curr, nxt, G)[1:]
+    if len(path) > len(raw_path)*2:
+        raise Exception('Path is too long')
+    if len(path) < 2:
+        raise Exception('Path is too short')
+    return path
+
+
+def are_neighbors(base, target, G):
+    """Check if target is a neighbor of base.
+
+    Args:
+        base (int): osmnx node id
+        target (int): osmnx node id
+        G: Graph object
+    Returns:
+        boolean
+    """
+    neighbors = set(G.neighbors(base))
+    if target in neighbors:
+        return True
+    return False
+
+
+def make_best_guess(base, target, G):
+    """Return shortes path between two nodes in an osmnx graph.
+
+    Args:
+        base (int): osmnx node id
+        target (int): osmnx node id
+        G: Graph object
+    Returns:
+        (List[int]): list of integer node ids
+    """
+    try:
+        return nx.shortest_path(G, base, target)
+    except nx.exception.NetworkXNoPath:
+        return [base]
