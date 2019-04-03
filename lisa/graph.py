@@ -17,7 +17,7 @@ from matplotlib.lines import Line2D
 
 class Name(object):
     """[summary]
-    
+
     Raises:
         TypeError: [description]
 
@@ -26,10 +26,10 @@ class Name(object):
 
     def __init__(self, name: str):
         """[summary]
-        
+
         Args:
             name (str): [description]
-        
+
         Raises:
             TypeError: [description]
         """
@@ -51,7 +51,7 @@ class Name(object):
 
 class Bbox(object):
     """[summary]
-    
+
     Returns:
         [type]: [description]
 
@@ -60,7 +60,7 @@ class Bbox(object):
 
     def __init__(self, north, south, east, west):
         """[summary]
-        
+
         Args:
             north ([type]): [description]
             south ([type]): [description]
@@ -71,7 +71,7 @@ class Bbox(object):
 
     def __iter__(self):
         """[summary]
-        
+
         Returns:
             [type]: [description]
         """
@@ -87,7 +87,9 @@ class Bbox(object):
         print(f"Height: {height}")
         print(f"Area: {area}")
 
+
 Bound = Union[Name, Bbox]
+
 
 class KDTreeWrapper(object):
     """Wraps the Scipy KD Tree to allow minimum distance node querying of NetworkX graphs.
@@ -95,7 +97,7 @@ class KDTreeWrapper(object):
 
     def __init__(self, g):
         """Initializes a KD tree and corresponding sorted node arrays
-        
+
         Args:
             g (nx.DiGraph): input DiGraph
         """
@@ -106,12 +108,12 @@ class KDTreeWrapper(object):
 
     def query_min_dist_nodes(self, x, k=1, distance_upper_bound=np.inf):
         """Finds the closest "k" nodes to the point "x" with maximum distance "distance_upper_bound"
-        
+
         Args:
             x : point with len 2 for x and y coordinates
             k (int, optional): Defaults to 1. number of closest nodes to find
             distance_upper_bound ([type], optional): Defaults to np.inf. maximum distance for found node
-        
+
         Returns:
             Union[Node, List[Node]]: closest k nodes
 
@@ -121,24 +123,24 @@ class KDTreeWrapper(object):
             x, k=k, distance_upper_bound=distance_upper_bound
         )
         if k == 1:
-            return self._sorted_node_ids[idxs]
+            return (self._sorted_node_ids[idxs], distances)
         elif k > 1:
-            return [self._sorted_node_ids[i] for i in idxs]
+            return ([self._sorted_node_ids[i] for i in idxs], distances)
 
 
 class GraphBuilder(object):
     """[summary]
-    
+
     Raises:
         ValueError: [description]
-    
+
     Returns:
         [type]: [description]
     """
 
     def __init__(self, bound: Bound):
         """The "run" function to make Graph objects
-        
+
         Args:
             bound (Union[Name, Bbox]): user desired bounds of the graph
 
@@ -164,13 +166,13 @@ class GraphBuilder(object):
 
     def initialize_map(self, bound: Union[Name, Bbox]):
         """initialize_map takes in a bound and uses osmnx to create an inital map of the desired area.
-        
+
         Args:
-            bound (Union[Name, Bbox]): user desired bounds of the graph 
-        
+            bound (Union[Name, Bbox]): user desired bounds of the graph
+
         Raises:
             ValueError: invalid bound type
-        
+
         Returns:
             [type]: [description]
         """
@@ -185,10 +187,10 @@ class GraphBuilder(object):
 
     def node_to_int(self, g: nx.DiGraph):
         """Creates a dictionary mapping all the nodes in a graph to integers
-        
+
         Args:
             g (nx.DiGraph): [description]
-        
+
         Returns:
             [type]: [description]
         """
@@ -196,11 +198,11 @@ class GraphBuilder(object):
 
     def enumerate_node_mapping(self, g: nx.DiGraph, node_map: dict):
         """[summary]
-        
+
         Args:
             g (nx.DiGraph): [description]
             node_map (dict): [description]
-        
+
         Returns:
             [type]: [description]
         """
@@ -209,17 +211,18 @@ class GraphBuilder(object):
 
     def enumerate_graph(self, g: nx.DiGraph):
         """Creates a graph with any node type from a graph with integer nodes
-        
+
         Args:
             g (nx.DiGraph): [description]
-        
+
         Returns:
             [type]: [description]
         """
         node_to_int = self.node_to_int(g)
 
         int_nodes = [(node_to_int[node], data) for node, data in g.nodes(data=True)]
-        int_edges = [(node_to_int[n1], node_to_int[n2], data) for n1, n2, data in g.edges(data=True)]
+        int_edges = [(node_to_int[n1], node_to_int[n2], data)
+                     for n1, n2, data in g.edges(data=True)]
 
         return create_dg(int_nodes, int_edges)
 
@@ -242,7 +245,7 @@ class Graph(object):
 
     def __init__(self, bound: Union[Name, Bbox]):
         """[summary]
-        
+
         Args:
             bound (Union[Name, Bbox]): [description]
         """
@@ -256,10 +259,10 @@ class Graph(object):
     @staticmethod
     def from_file(filepath: str):
         """Unpickle a graph object
-        
+
         Args:
             filepath (str): filepath to the object
-        
+
         Returns:
             Graph: [description]
         """
@@ -268,7 +271,7 @@ class Graph(object):
 
     def save(self, filepath: str):
         """Pickle graph object to a file
-        
+
         Args:
             filepath (str): filepath to save the object
         """
@@ -277,7 +280,7 @@ class Graph(object):
 
     def create_mdg(self):
         """Create a MultiDiGraph from self.DiGraph for visualization purposes
-        
+
         Returns:
             ox.MultiDiGraph -- []
         """
@@ -300,16 +303,16 @@ class Graph(object):
         ox.plot_graph(MDG, fig_height=fig_height)
 
     def plot_simple_graph(self, fig_height=10):
-        ox.plot_graph(self.init_graph, fig_height = fig_height)
+        ox.plot_graph(self.init_graph, fig_height=fig_height)
 
-    def plot_routes(self, routes, fig_height=10): 
+    def plot_routes(self, routes, fig_height=10):
         """
         Create_mdg() appears to be nondeterministic.
         routes is a list of routes.
             Each route is a list of nodes traversed in order.
 
         routes = None picks two routes of length 1 and plots those.
-        
+
 
         """
         MDG = self.create_mdg()
@@ -322,22 +325,18 @@ class Graph(object):
             routes = [first_node_list, second_node_list]
             ox.plot_graph_routes(MDG, routes, fig_height=fig_height)
 
-
-
     def create_legend(self, edge_legend, node_legend):
         legend_elements = []
         if edge_legend:
             for edge_label in edge_legend:
-                legend_elements.append(Line2D([0], [0], color = edge_legend[edge_label], lw=3, label = edge_label))
+                legend_elements.append(
+                    Line2D([0], [0], color=edge_legend[edge_label], lw=3, label=edge_label))
 
         if node_legend:
             for node_label in node_legend:
-                legend_elements.append(Line2D([0], [0], marker='o', color = node_legend[node_label], label = node_label,
-                              markerfacecolor=node_legend[node_label], markersize=8))
-        return legend_elements        
-
-
-
+                legend_elements.append(Line2D([0], [0], marker='o', color=node_legend[node_label], label=node_label,
+                                              markerfacecolor=node_legend[node_label], markersize=8))
+        return legend_elements
 
     def highlight_graph(self, edge_filter_function, node_filter_function, legend_elements, title):
         """
@@ -362,8 +361,6 @@ class Graph(object):
 
         fig, ax = ox.plot.plot_graph(G, show=False, close=False, edge_color=ec, node_color=nc)
 
-
-
         ax.legend(handles=legend_elements)
 
         return fig, ax
@@ -385,19 +382,19 @@ class Graph(object):
             node = tup[0]
             xy_dict = tup[1]
             pos[(xy_dict["x"], xy_dict["y"])] = node
-        return pos       
+        return pos
 
     def create_edge_labels(self, attribute_list):
-        edge_labels = {(u, v): {attribute: d.get(attribute) for attribute in attribute_list} for u, v, d in self.DiGraph.edges(data=True)}
+        edge_labels = {(u, v): {attribute: d.get(attribute) for attribute in attribute_list}
+                       for u, v, d in self.DiGraph.edges(data=True)}
         return edge_labels
-
 
 
 class Graph_Hover(object):
     """Object for displaying graph edge attributes on hover. One object must be created for each axis.
     """
 
-    def __init__(self, graph, fig, ax, node_hover = False):
+    def __init__(self, graph, fig, ax, node_hover=False):
         """Initializes the Graph_Hover object.
 
         Args:
@@ -411,21 +408,19 @@ class Graph_Hover(object):
         self.fig = fig
         self.ax = ax
         self.reverse_pos = graph.create_reverse_pos()
-        self.annot = None      
+        self.annot = None
 
         # For node hovering
         self.node_hover = node_hover
         if self.node_hover:
             self.mdg = self.graph.create_mdg()
 
-
-
     def annotate_ax(self):
-        """Creates the annotation textbox.        
+        """Creates the annotation textbox.
         """
-        self.annot = self.ax.annotate("", xy=(0,0), xytext=(-20,20),textcoords="offset points",
-                    bbox=dict(boxstyle="round", fc="w"),
-                    arrowprops=dict(arrowstyle="->"))
+        self.annot = self.ax.annotate("", xy=(0, 0), xytext=(-20, 20), textcoords="offset points",
+                                      bbox=dict(boxstyle="round", fc="w"),
+                                      arrowprops=dict(arrowstyle="->"))
         self.annot.set_visible(False)
 
     def hover(self, event):
@@ -443,19 +438,16 @@ class Graph_Hover(object):
 
                         arr = ind["ind"]
 
-
-
                         annot.xy = (event.xdata, event.ydata)
 
-
-                        point1, point2 = child.get_segments()[arr[0]] #point1 and point2 are each [x, y] arrays
+                        # point1 and point2 are each [x, y] arrays
+                        point1, point2 = child.get_segments()[arr[0]]
                         point1_x, point1_y = point1
                         point2_x, point2_y = point2
 
                         node1 = self.reverse_pos[(point1_x, point1_y)]
                         node2 = self.reverse_pos[(point2_x, point2_y)]
                         edge = self.graph.DiGraph.edges[node1, node2]
-
 
                         text = str(edge)
                         self.annot.set_text(text)
@@ -468,14 +460,14 @@ class Graph_Hover(object):
                             self.annot.set_visible(False)
                             fig.canvas.draw_idle()
 
-                # For node hovering          
+                # For node hovering
                 elif self.node_hover and type(child) is mpl.collections.PathCollection:
-                    cont,ind = child.contains(event)
+                    cont, ind = child.contains(event)
                     if cont:
                         arr = ind["ind"]
                         # print(arr[0])
-                        text = self.mdg.nodes(data=True)[arr[0]] #super sketchy, but apparently self.mdg.nodes names the nodes the same way pyplot reads them
-
+                        # super sketchy, but apparently self.mdg.nodes names the nodes the same way pyplot reads them
+                        text = self.mdg.nodes(data=True)[arr[0]]
 
                         self.annot.set_text(text)
                         self.annot.get_bbox_patch().set_alpha(0.4)
@@ -486,7 +478,6 @@ class Graph_Hover(object):
                         if vis:
                             self.annot.set_visible(False)
                             fig.canvas.draw_idle()
-
 
     def add_scatter(self, x_s: list, y_s: list, color: str):
         """Add scatterplot points on top of the displayed axis.
@@ -527,22 +518,20 @@ if __name__ == "__main__":
         else:
             return "#1F1F1F"
 
-
     def node_filter(data):
-        if data.get("x")>-77.101:
+        if data.get("x") > -77.101:
             return 'b'
         else:
             return "#1F1F1F"
 
+    edge_legend = {"Separate path": 'r', "Has crosswalk": 'm', "Has bike lane": 'g'}
+    node_legend = {"x > -77.01": 'b', "x <= -77.01": '#1F1F1F'}
 
-    edge_legend = {"Separate path":'r', "Has crosswalk":'m', "Has bike lane":'g'}
-    node_legend = {"x > -77.01": 'b', "x <= -77.01":'#1F1F1F'}
+    edge_and_nodes = G.create_legend(edge_legend=edge_legend, node_legend=node_legend)
+    only_nodes = G.create_legend(edge_legend=None, node_legend=node_legend)
 
-    edge_and_nodes = G.create_legend(edge_legend = edge_legend, node_legend = node_legend)
-    only_nodes = G.create_legend(edge_legend = None, node_legend = node_legend)
-
-
-    fig, ax1 = G.highlight_graph(edge_filter_function = edge_filter, node_filter_function = node_filter, legend_elements = edge_and_nodes, title = "Test title")
+    fig, ax1 = G.highlight_graph(edge_filter_function=edge_filter,
+                                 node_filter_function=node_filter, legend_elements=edge_and_nodes, title="Test title")
 
     # ax1.scatter([-77.102, -77.103], [38.88,38.881], color='b')
 
@@ -550,12 +539,12 @@ if __name__ == "__main__":
     # edge_labels = G.create_edge_labels(["separate_path", "crosswalk"])
     # nx.draw_networkx_edge_labels(G.DiGraph, pos, ax = ax1, edge_labels = edge_labels, alpha = 0.5, rotate = False)
 
-
-    hover = Graph_Hover(graph = G, fig = fig, ax = ax1)
+    hover = Graph_Hover(graph=G, fig=fig, ax=ax1)
     hover.display_graph()
 
-    fig, ax2 = G.highlight_graph(edge_filter_function = None, node_filter_function = node_filter, legend_elements = only_nodes, title = "Test title")
+    fig, ax2 = G.highlight_graph(
+        edge_filter_function=None, node_filter_function=node_filter, legend_elements=only_nodes, title="Test title")
 
-    hover = Graph_Hover(graph = G, fig = fig, ax = ax2)
-    hover.add_scatter(x_s = [-77.102, -77.103], y_s = [38.88,38.881], color = 'b')
+    hover = Graph_Hover(graph=G, fig=fig, ax=ax2)
+    hover.add_scatter(x_s=[-77.102, -77.103], y_s=[38.88, 38.881], color='b')
     hover.display_graph()

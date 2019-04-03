@@ -54,7 +54,7 @@ def expand_graph(g_init: nx.MultiDiGraph):
 
     nodes = shift_nodes(g_init, nodes, segments)
 
-    intersections = IntersectionBuilder.create_intersections(in_out)
+    intersections = IntersectionBuilder.create_intersections(in_out, g_init)
 
     edges = segments + intersections
     g_expanded = create_dg(nodes, edges)
@@ -81,9 +81,13 @@ def create_node_map(g_initial: nx.MultiDiGraph, g_expanded: nx.DiGraph):
 
 class IntersectionBuilder(object):
     @staticmethod
-    def create_intersections(in_out):
+    def create_intersections(in_out, g: nx.MultiDiGraph):
         """
-        :param in_out: in out dictionary of the init_graph nodes
+        Expands nodes to intersection edges - keeping all node data in each edge
+
+        Args:
+            g (nx.MultiDiGraph): input graph used to pull node data
+            in_out (Dict): in out dictionary of the init_graph nodes
         """
         intersections = []
         for k, v in in_out.items():
@@ -93,7 +97,10 @@ class IntersectionBuilder(object):
                 for n_out in v["out"]:
                     n2 = (k, n_out, "out")
                     if n_in != n_out:
-                        intersections.append((n1, n2, {"type": "intersection"}))
+                        edge_data = g.nodes(data=True)[n1[1]]
+                        edge_data["type"] = "intersection"
+                        intersections.append((n1, n2, edge_data))
+
         return intersections
 
 
