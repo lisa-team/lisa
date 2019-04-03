@@ -7,4 +7,4 @@ XYDict = Dict[str, float]
 EdgeExpd = Tuple[NodeExpd, NodeExpd, XYDict]
 EdgesExpd = Iterable[EdgeExpd]
 NodeExpdToXYNP = Dict[NodeExpd, np.ndarray]
-
+NodeID = int
