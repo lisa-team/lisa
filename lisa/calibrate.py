@@ -177,11 +177,11 @@ def create_model(dataframe: pd.DataFrame, specs: OrderedDict, spec_names: Ordere
 
     return fit_summary, summary
 
-def sort_input_attributes(summary_dict: dict):
-    """Takes in the fitted model summary and ranks the input variables based on model preference and error range consistency
 
-        I'm assuming (parameter +- std_err) needs to be all positive or all negative. If not, don't return it as a weighted attribute
-    
+# TODO: Combine sort_input_attributes with weights_to_lts
+def sort_input_attributes(summary_dict: dict):
+    """Takes in the fitted model summary and picks the statistically significant input variables
+
     Args:
         summary_dict (dict): 2nd output from from create_model() method
     
@@ -190,17 +190,27 @@ def sort_input_attributes(summary_dict: dict):
     """
     weights = {}
 
-    # try to reject any values with large errors ()
+    # try to reject any values p_values greater than .05
     for attribute in summary_dict:
         std_error = summary_dict[attribute]['std_err']
         weight = summary_dict[attribute]['parameters']
-        lower_bound = weight - std_error
-        upper_bound = weight + std_error
+        p_value = summary_dict[attribute]['p_values']
         
-        if (((lower_bound <= 0) and (upper_bound <= 0)) or ((lower_bound >= 0) and (upper_bound >= 0))):
-            weights[attribute] = weight
+        if (p_value < 0.10):
+            weights[attribute] = (weight, std_error)
     
     return weights
+
+def weights_to_lts(attribute_weights: dict):
+    """ 
+    
+    Args:
+        attribute_weights (dict): [description]
+    """
+
+    pass
+    
+
 
 
 if __name__ == "__main__":
@@ -209,7 +219,7 @@ if __name__ == "__main__":
     # G = Graph(bbox)
     # G.save("boundgraph")
 
-    G = Graph.from_file("boundgraph").DiGraph
+    G = Graph.from_file("dc.pickle").DiGraph
     nodes = list(G.nodes)
 
     # generate paths (replace with map-matching paths later)
@@ -217,15 +227,19 @@ if __name__ == "__main__":
     for i in range(3):
         start = choice(nodes)
         end = choice(nodes)
-        path = nx.shortest_path(G, start, end)
-        paths.append(path)
-    print("paths: ", paths)
+        try:
+            path = nx.shortest_path(G, start, end)
+            paths.append(path)
+        except nx.exception.NetworkXNoPath:
+            pass
+        
+    # print("paths: ", paths)
     featurelist = ["bike_lane", "separate_path", "speed_limit", "traffic_volume", "crosswalk", "turn", "distance_efficiency"]
     
     (df, specs, spec_names) = create_dataframe(G, paths, featurelist)
-    a, b = create_model(df, specs, spec_names)
+    fit_summary, summary_dict = create_model(df, specs, spec_names)
     # print(a)
     # print(b)
-    print(sort_input_attributes(b))
+    print(sort_input_attributes(summary_dict))
 
     
