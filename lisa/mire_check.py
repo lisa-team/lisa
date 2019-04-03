@@ -94,26 +94,43 @@ if __name__ == "__main__":
             except:
                 print("problem number", err)
                 err+=1
-    print("errors:", err)
+    # print("errors:", err)
 
-    print("edges compiled")
+    # print("edges compiled")
 
     g1.add_edges_from(mire_edges)
 
 
-    print("edge adding done")
+    # print("edge adding done")
 
     # print([k for k in g1.edges(data=True)][:10])
+    # print("g1 nodes: ", list(g1.nodes(data=True))[0])
+    # print("g1 edges: ", list(g1.edges(data=True))[0])
 
 
-    print([k for k in g1.nodes(data=True) if k[1].get("x") is None][:10])
+    # print([k for k in g1.nodes(data=True) if k[1].get("x") is None][:10])
 
     g2 = Graph(bound = None, mire_graph = g1)
+
+    print("g2 init nodes: ", list(g2.init_graph.nodes(data=True))[0])
+    print("g2 init edges: ", list(g2.init_graph.edges(data=True))[0])
+
+    print("g2 nodes: ", list(g2.DiGraph.nodes(data=True))[0])
+    print("g2 edges: ", list(g2.DiGraph.edges(data=True))[0])
+    # print("g2 node map: ", g2.node_map)
+
+
+
+    # g2.plot_graph()
+
+
+
+    
 
     # print(len(sorted(list(g2.nodes(data=True)), key=lambda n: n[0])))
 
     # fig, ax2 = g2.highlight_graph(edge_filter_function=None, node_filter_function=None, legend_elements=None, title = "")
-    g2.plot_graph()
+    
     # plt.savefig('../out/test(1).png')
     # plt.show()
 

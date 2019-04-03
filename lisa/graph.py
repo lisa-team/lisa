@@ -156,7 +156,8 @@ class GraphBuilder(object):
 
         # expand graph, add data (currently random)
         g_expd = expand_graph(self.g_init)
-        g_expd = add_random_attributes(g_expd)
+        if not mire_graph:
+            g_expd = add_random_attributes(g_expd)
         init_to_expd_nodes = create_node_map(self.g_init, g_expd)
 
         # convert expanded graph's nodes to integers
@@ -509,7 +510,7 @@ class Graph_Hover(object):
 
 if __name__ == "__main__":
     # bbox = Bbox(38.883_000_16, 38.878_726_840_000_006, -77.099_398_32, -77.105_007_68)
-    bbox = Bbox(38.921288, 38.919085, -77.029480, -77.034512)
+    bbox = Bbox("Washington, DC")
     # bbox = Bbox(38.898191, 38.894810, -77.003528, -77.010062)
     G = Graph(bbox)
     print(f"First 100 nodes: {list(G.DiGraph.nodes)[:100]}\n")
