@@ -509,8 +509,8 @@ class Graph_Hover(object):
         plt.savefig(filename+'.png')
 
 if __name__ == "__main__":
-    # bbox = Bbox(38.883_000_16, 38.878_726_840_000_006, -77.099_398_32, -77.105_007_68)
-    bbox = Name("Washington, DC")
+    bbox = Bbox(38.883_000_16, 38.878_726_840_000_006, -77.099_398_32, -77.105_007_68)
+    # bbox = Name("Washington, DC")
     # bbox = Bbox(38.898191, 38.894810, -77.003528, -77.010062)
     G = Graph(bbox)
     print(f"First 100 nodes: {list(G.DiGraph.nodes)[:100]}\n")

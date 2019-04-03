@@ -93,8 +93,6 @@ def get_expanded_graph_from_mire(gdb: str, node_layer: int, edge_layer: int):
 
 
 if __name__ == "__main__":
-
-
     gdb = "scratch_022819.gdb"
     node_layer = 3
     edge_layer = 2
@@ -293,27 +291,27 @@ if __name__ == "__main__":
     # adjust
     # x_scale = osmnx_dimensions[0] / mire_dimensions[0]
     # y_scale = osmnx_dimensions[1] / mire_dimensions[1]
-    x_scale = 0.01745329251994328
-    y_scale = 0.01745329251994328
+    # x_scale = 0.01745329251994328
+    # y_scale = 0.01745329251994328
     # x_trans = osmnx_bounds_x[0] - mire_bounds_x[0]*x_scale
     # y_trans = osmnx_bounds_y[1] - mire_bounds_y[1]*y_scale
-    x_trans = 0
-    y_trans = 0
-    mire_coords_adjusted = list(map(
-        lambda c: (c[0] * x_scale + x_trans, c[1] * y_scale + y_trans),
-        mire_coords
-    ))
+    # x_trans = 0
+    # y_trans = 0
+    # mire_coords_adjusted = list(map(
+    #     lambda c: (c[0] * x_scale + x_trans, c[1] * y_scale + y_trans),
+    #     mire_coords
+    # ))
     # print("xscale: {}\nyscale: {}\nxtrans: {}\nytrans: {}".format(x_scale, y_scale, x_trans, y_trans))
 
     # plot
     # chart = leather.Chart('MIRE coords (blue) vs osmnx coords (red)')
     # print(fiona.transform.transform('EPSG:4326', 'EPSG:26953', [-105.0], [40.0]))
-    fiona_xs, fiona_ys = fiona.transform.transform(
-        'EPSG:26985', 'EPSG:4326',
-        [c[0] for c in mire_coords],
-        [c[1] for c in mire_coords]
-    )
-    fiona_translated_mire = list(zip(fiona_xs, fiona_ys))
+    # fiona_xs, fiona_ys = fiona.transform.transform(
+    #     'EPSG:26985', 'EPSG:4326',
+    #     [c[0] for c in mire_coords],
+    #     [c[1] for c in mire_coords]
+    # )
+    # fiona_translated_mire = list(zip(fiona_xs, fiona_ys))
 
     # ax = plt.subplot(111)
     # ax.scatter(fiona_xs, fiona_ys, color = 'c', s=16)
