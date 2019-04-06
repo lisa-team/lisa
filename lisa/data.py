@@ -10,9 +10,17 @@ Example:
 """
 
 # TODO some of what Nathan, Uma, and Annie have been writing goes here
-from random import random, randrange, choice
+import math
+
+from matching import match_single, CoordinateMatchError
 import networkx as nx
+import fiona
+
+from random import random, randrange, choice
 from copy import deepcopy
+from enum import Enum
+from itertools import permutations
+
 
 def shapefile_to_osmnx_graph(blah: str, blah2: str, blah3: int):
     """This is a single line describing function.
@@ -31,6 +39,97 @@ def shapefile_to_osmnx_graph(blah: str, blah2: str, blah3: int):
 
     """
     pass
+
+
+class IntersectionGrade(Enum):
+    """Enumerates intersection grade codes
+
+    reference: https://wiki.ddot.dc.gov/display/GIS/DDOT%27s+Transportation+Data+Products
+    """
+    AtGrade = 0
+    NotAtGrade = 1
+    Undefined = 2
+    Uncontrolled = 10
+    TwoWayStop = 11
+    AllWayStop = 12
+    SignalizedWithPedSignal = 13
+    SignalizedWithNoPedSignal = 14
+    SignalizedRRCrossing = 15
+    SignedRRCrossing = 16
+    YieldSign = 17
+
+
+def add_data_from_gdb(g, filename: str):
+    """Tags the input graph with data from the supplied geodatabase
+
+    For each feature in the "BlockIntersection" layer of the geodatabase the
+    closest intersection is found in G and all intersection edges are tagged
+    with the Intersection Grade Code for that intersection.
+
+    This program also assumes coordinates in seconds, not degrees
+
+    reference: https://wiki.ddot.dc.gov/display/GIS/DDOT%27s+Transportation+Data+Products
+
+    Args:
+        g (lisa.graph.Graph): the graph to be tagged with intersection attributes
+        filename (str): a relative filepath to the source geodatabas (.gbd file)
+
+    Returns:
+        None
+    """
+
+    layers_list = fiona.listlayers(filename)
+    try:
+        block_intersection_layer_i = layers_list.index("BlockIntersection")
+    except ValueError as e:
+        print("Supplied geodatabase file has no 'BlockIntersection' layer")
+        raise e
+
+    with fiona.open(filename, 'r', layer=block_intersection_layer_i) as inp:
+        max_x = -math.inf
+        min_x = math.inf
+        max_y = -math.inf
+        min_y = math.inf
+
+        for f in inp:
+            coords = f['geometry']['coordinates']
+            coords = coords[0]/(60*60*2), coords[1]/(60*60)
+            max_x = max(max_x, coords[0])
+            min_x = min(min_x, coords[0])
+            max_y = max(max_y, coords[1])
+            min_y = min(min_y, coords[1])
+
+            gc = f['properties']['GRADE']  # grade code
+
+            if gc not in [0, 1, 2, 10, 11, 12, 13, 14, 15, 16, 17]:
+                # raise ValueError("Unknown intersection grade code {}".format(gc))
+                print("Unknown intersection grade code {}".format(gc))
+                continue
+
+            attrs = {
+                'grade': gc,
+                'notAtGrade': 1 if gc == 1 else 0,
+                'stops': 4 if gc == 12 else 2 if gc == 11 else 0,
+                'signal': 1 if gc in [13, 14] else 0,
+                'pedsignal': 1 if gc == 14 else 0,
+                'rr': 1 if gc == 15 else 0,
+                'yield': 1 if gc == 17 else 0,
+            }
+
+            try:
+                intersection = match_single(coords, g.init_min_dist)
+            except CoordinateMatchError as e:
+                print(e)
+                continue
+            nx.set_node_attributes(g.init_graph, {intersection: attrs})
+
+            # set value for each node in expanded graph
+            nodes = g.node_map[intersection]
+            for p in permutations(nodes, 2):
+                if g.DiGraph.has_edge(p):
+                    g.DiGraph.set_edge_attributes({p: attrs})
+        print("x range: [{}, {}]".format(min_x, max_x))
+        print("y range: [{}, {}]".format(min_y, max_y))
 
 
 class StreetDataGenerator:
@@ -130,6 +229,7 @@ class StreetDataGenerator:
         attributes = cls().generate_attributes(g_new)
         nx.set_edge_attributes(g_new, values=attributes)
         return g_new
+
 
 def add_random_attributes(g: nx.DiGraph):
     """[summary]

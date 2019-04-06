@@ -15,22 +15,24 @@ logging.basicConfig(level=logging.INFO,
                     format='%(asctime)s - %(levelname)s - %(message)s',
                     datefmt='%d-%b-%y %H:%M:%S')
 
+class CoordinateMatchError(Exception):
+    """Exception for unfound coordinate/graph match"""
+    pass
 
-def match_single(coord, kd, G, error=0.00001):
-    """Match (long, lat) to closest osmnx graph node
-level=logging.DEBUGlevel=logging.DEBUG
+
+def match_single(coord, kd, t=0.00001):
+    """Match (long, lat) to closest osmnx graph node.
     Args:
         coord (Tuple[float, float]): the latitude and longitude to match
-        kd: KDTreeWrapper object
-        G: Graph object
-        error (float): degree of accuracy expected for each gps<->node match
+        kd (lisa.graph.KDWrapper): the kd tree built off init_graph
+        t (float): tolerance in degrees
     Returns:
         int: the closest osmnx node ID
     """
-    # closest_node, d = kd.query_min_dist_nodes(coord)
-    closest_node, d = nearest_node(coord, kd, G)
-    if d > error:
-        raise Exception('Closest node is not a match. d: ', d)
+    closest_node, d = kd.query_min_dist_nodes(coord)
+    if d > t:
+        raise CoordinateMatchError('Closest node is not a match. d: ', d)
+    print("SUCCESSFUL MATCH closest node match d: ", d)
     return closest_node
 
 

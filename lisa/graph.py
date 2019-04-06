@@ -138,7 +138,7 @@ class GraphBuilder(object):
         [type]: [description]
     """
 
-    def __init__(self, bound: Bound):
+    def __init__(self, bound: Bound, mire_graph: nx.Graph = None):
         """The "run" function to make Graph objects
 
         Args:
@@ -149,11 +149,15 @@ class GraphBuilder(object):
         """
         # initialize graph from given bounx
         self.bound = bound
-        self.g_init = self.initialize_map(self.bound)
+        if not mire_graph and self.bound:
+            self.g_init = self.initialize_map(self.bound)
+        else:
+            self.g_init = mire_graph 
 
         # expand graph, add data (currently random)
         g_expd = expand_graph(self.g_init)
-        g_expd = add_random_attributes(g_expd)
+        if not mire_graph:
+            g_expd = add_random_attributes(g_expd)
         init_to_expd_nodes = create_node_map(self.g_init, g_expd)
 
         # convert expanded graph's nodes to integers
@@ -243,18 +247,21 @@ class Graph(object):
     osmnx visualization features
     """
 
-    def __init__(self, bound: Union[Name, Bbox]):
+    def __init__(self, bound: Union[Name, Bbox], mire_graph: nx.Graph = None):
         """[summary]
 
         Args:
             bound (Union[Name, Bbox]): [description]
         """
-        graph_builder = GraphBuilder(bound)
+        if bound:
+            graph_builder = GraphBuilder(bound)
+        else:
+            graph_builder = GraphBuilder(bound = None, mire_graph = mire_graph)
         self.DiGraph = graph_builder.g_expd_int
         self.init_graph = graph_builder.g_init
         self.node_map = graph_builder.init_to_expd_int_nodes
-        self._init_min_dist = graph_builder.init_kd_tree
-        self._dg_min_dist = graph_builder.dg_kd_tree
+        self.init_min_dist = graph_builder.init_kd_tree
+        self.dg_min_dist = graph_builder.dg_kd_tree
 
     @staticmethod
     def from_file(filepath: str):
@@ -361,11 +368,12 @@ class Graph(object):
 
         fig, ax = ox.plot.plot_graph(G, show=False, close=False, edge_color=ec, node_color=nc)
 
+        ax.set_title(title)
         ax.legend(handles=legend_elements)
 
         return fig, ax
 
-    def show_graph(self, fig, ax):
+    def show_graph(self):
         plt.show()
 
     def create_pos(self):
@@ -497,16 +505,20 @@ class Graph_Hover(object):
         self.fig.canvas.mpl_connect("motion_notify_event", self.hover)
         plt.show()
 
+    def save_fig(self, filename):
+        plt.savefig(filename+'.png')
 
 if __name__ == "__main__":
     bbox = Bbox(38.883_000_16, 38.878_726_840_000_006, -77.099_398_32, -77.105_007_68)
+    # bbox = Name("Washington, DC")
+    # bbox = Bbox(38.898191, 38.894810, -77.003528, -77.010062)
     G = Graph(bbox)
     print(f"First 100 nodes: {list(G.DiGraph.nodes)[:100]}\n")
     print(f"First 100 edges: {list(G.DiGraph.edges)[:100]}\n")
 
-    init_graph_node = list(G.init_graph.nodes)[30]  # pink node
-    expanded_nodes = G.node_map[init_graph_node]  # yellow nodes
-    print(f"Pink node: {init_graph_node} -> Yellow nodes: {expanded_nodes}\n")
+    # init_graph_node = list(G.init_graph.nodes)[30]  # pink node
+    # expanded_nodes = G.node_map[init_graph_node]  # yellow nodes
+    # print(f"Pink node: {init_graph_node} -> Yellow nodes: {expanded_nodes}\n")
 
     def edge_filter(data):
         if data.get("separate_path"):
@@ -530,21 +542,22 @@ if __name__ == "__main__":
     edge_and_nodes = G.create_legend(edge_legend=edge_legend, node_legend=node_legend)
     only_nodes = G.create_legend(edge_legend=None, node_legend=node_legend)
 
-    fig, ax1 = G.highlight_graph(edge_filter_function=edge_filter,
-                                 node_filter_function=node_filter, legend_elements=edge_and_nodes, title="Test title")
+    # fig, ax1 = G.highlight_graph(edge_filter_function=edge_filter,
+    #                              node_filter_function=node_filter, legend_elements=edge_and_nodes, title="Test title")
 
-    # ax1.scatter([-77.102, -77.103], [38.88,38.881], color='b')
 
-    # pos = G.create_pos()
-    # edge_labels = G.create_edge_labels(["separate_path", "crosswalk"])
-    # nx.draw_networkx_edge_labels(G.DiGraph, pos, ax = ax1, edge_labels = edge_labels, alpha = 0.5, rotate = False)
+    # hover = Graph_Hover(graph=G, fig=fig, ax=ax1)
+    # hover.save_fig("test")
+    # hover.display_graph()
 
-    hover = Graph_Hover(graph=G, fig=fig, ax=ax1)
-    hover.display_graph()
+    # G.plot_simple_graph()
+    # fig, ax2 = G.highlight_graph(edge_filter_function=None, node_filter_function=None, legend_elements=None, title = "")
+    # ax2.add_scatter([-77.102, -77.103], [38.88, 38.881], 'b')
 
-    fig, ax2 = G.highlight_graph(
-        edge_filter_function=None, node_filter_function=node_filter, legend_elements=only_nodes, title="Test title")
 
-    hover = Graph_Hover(graph=G, fig=fig, ax=ax2)
-    hover.add_scatter(x_s=[-77.102, -77.103], y_s=[38.88, 38.881], color='b')
-    hover.display_graph()
+    # plt.show()
+
+    # hover = Graph_Hover(graph=G, fig=fig, ax=ax2)
+    # hover.add_scatter(x_s=[-77.102, -77.103], y_s=[38.88, 38.881], color='b')
+    # hover.save_fig("E St and North Capitol St (1)")
+    # hover.display_graph()
