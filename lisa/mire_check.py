@@ -72,6 +72,7 @@ def get_edges_from_mire(gdb: str, edge_layer: int):
                 edge2 = (secondIntersection, firstIntersection, dict(f['properties']))
                 mire_edges.append(edge)
                 mire_edges.append(edge2)
+
             except:
                 err+=1
     return mire_edges
@@ -95,6 +96,7 @@ def get_expanded_graph_from_mire(gdb: str, node_layer: int, edge_layer: int):
     init_graph = get_initial_graph_from_mire(gdb, node_layer, edge_layer)
     expanded_graph = Graph(bound = None, mire_graph = init_graph)
     return expanded_graph
+
 
 
 def create_mdg(digraph):

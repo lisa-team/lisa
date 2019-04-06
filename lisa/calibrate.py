@@ -217,8 +217,6 @@ def weights_to_lts(attribute_weights: dict):
 
 
 
-
-
 if __name__ == "__main__":
 
     # bbox = Bbox(38.88300016, 38.878726840000006, -77.09939832, -77.10500768)
@@ -230,34 +228,11 @@ if __name__ == "__main__":
     node_layer = 3
     edge_layer = 2
 
-    G = get_expanded_graph_from_mire(gdb, node_layer, edge_layer)
-    # G = get_initial_graph_from_mire(gdb, node_layer, edge_layer)
-    print("drawing now")
-    # nx.draw(G)
 
-    try:
-        G.plot_graph()
+    G = get_expanded_graph_from_mire(gdb, node_layer, edge_layer).DiGraph
 
-    except:
-        print("oh no")
-
-    G = G.DiGraph
     nodes = list(G.nodes)
 
-    from collections import Counter
-    count = Counter([len(c) for c in sorted(nx.strongly_connected_components(G),key=len, reverse=True)])
-    print([(k, count[k]) for k in sorted(list(count), reverse=True)])
-    # seen = set()
-    # connected = {}
-
-    # for node in nodes:
-    #     tmp = connected.get(node,[])
-    #     for n in G[node]:
-    #         if G.edges.get((node,n)):
-    #             tmp.append(n)
-    #     connected[node] = tmp
-
-    # print([k,v for k,v in connected][:5])
 
     # generate paths (replace with map-matching paths later)
     paths = []
@@ -267,7 +242,8 @@ if __name__ == "__main__":
         try:
             path = nx.shortest_path(G, start, end)
             paths.append(path)
-        except Exception as e:
+
+        except nx.exception.NetworkXNoPath as e:
             print(e)
         
     # print("paths: ", paths)
