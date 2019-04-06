@@ -1,11 +1,8 @@
 import math
-import pickle
-from graph import KDTreeWrapper
 
 
 def nearest_node(coord, kd, G, n=3):
-    """
-    Find the nearest osmnx node to a long, lat coordinate.
+    """Find the nearest osmnx node to a long, lat coordinate.
     Does this by querying the closest n nodes, finding all adjacent edges,
     calculating the closest edge, and returning the relevant node.
 
@@ -34,8 +31,7 @@ def nearest_node(coord, kd, G, n=3):
 
 
 def generate_line(node1, node2):
-    """
-    Find the standard form equation of a line given two osmnx nodes.
+    """Find the standard form equation of a line given two osmnx nodes.
 
     Args:
         node1 (int): osmnx node id
@@ -52,8 +48,7 @@ def generate_line(node1, node2):
 
 
 def calculate_dist(coord, a, b, c):
-    """
-    Calculate the distance d from a point (x0, y0) to the line ax + by + c = 0,
+    """Calculate the distance d from a point (x0, y0) to the line ax + by + c = 0,
     defined as the shortest distance between a fixed point and any point on the
     line. It is the length of the line segment that is perpendicular to the
     line and passes through the point.
@@ -68,13 +63,7 @@ def calculate_dist(coord, a, b, c):
     """
     x0 = coord[0]
     y0 = coord[1]
-    d = abs(a*x0 + b*y0 + c)/math.sqrt(a*a + b*b)
-    return d
-
-
-if __name__ == "__main__":
-
-    pickle_in = open('dc.pickle', "rb")
-    G = pickle.load(pickle_in)
-    kd = KDTreeWrapper(G.DiGraph)
-    node = nearest_node((38.91, 77.04), kd, G.DiGraph)
+    try:
+        return abs(a*x0 + b*y0 + c)/math.sqrt(a*a + b*b)
+    except ZeroDivisionError:
+        return math.inf
