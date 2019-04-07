@@ -10,6 +10,10 @@ import sys
 from random import random, randrange, choice
 from nx_types import *
 
+from mire_check import *
+
+
+
 def calc_distance_efficiency(edgenode1: NodeID, edgenode2: NodeID, endnode: NodeID):
     """Takes in an edge and the endpoint to calculate how well the edge choice leads to the endpoint
         Does this by calculating the distance between:
@@ -219,19 +223,28 @@ if __name__ == "__main__":
     # G = Graph(bbox)
     # G.save("boundgraph")
 
-    G = Graph.from_file("dc.pickle").DiGraph
+    # G = Graph.from_file("dc.pickle").DiGraph
+    gdb = "scratch_022819.gdb"
+    node_layer = 3
+    edge_layer = 2
+
+
+    G = get_expanded_graph_from_mire(gdb, node_layer, edge_layer).DiGraph
+
     nodes = list(G.nodes)
+
 
     # generate paths (replace with map-matching paths later)
     paths = []
-    for i in range(3):
+    for i in range(5):
         start = choice(nodes)
         end = choice(nodes)
         try:
             path = nx.shortest_path(G, start, end)
             paths.append(path)
-        except nx.exception.NetworkXNoPath:
-            pass
+
+        except nx.exception.NetworkXNoPath as e:
+            print(e)
         
     # print("paths: ", paths)
     featurelist = ["bike_lane", "separate_path", "speed_limit", "traffic_volume", "crosswalk", "turn", "distance_efficiency"]
