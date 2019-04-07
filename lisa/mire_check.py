@@ -69,7 +69,10 @@ def get_edges_from_mire(gdb: str, edge_layer: int):
                 continue
             try:
                 edge = (firstIntersection,secondIntersection, dict(f['properties']))
+                edge2 = (secondIntersection, firstIntersection, dict(f['properties']))
                 mire_edges.append(edge)
+                mire_edges.append(edge2)
+
             except:
                 err+=1
     return mire_edges
@@ -83,6 +86,9 @@ def get_initial_graph_from_mire(gdb: str, node_layer: int, edge_layer: int):
     mire_edges = get_edges_from_mire(gdb, edge_layer)
     init_graph.add_edges_from(mire_edges)
 
+
+    init_graph = create_mdg(init_graph)
+
     return init_graph
 
 
@@ -90,6 +96,23 @@ def get_expanded_graph_from_mire(gdb: str, node_layer: int, edge_layer: int):
     init_graph = get_initial_graph_from_mire(gdb, node_layer, edge_layer)
     expanded_graph = Graph(bound = None, mire_graph = init_graph)
     return expanded_graph
+
+
+
+def create_mdg(digraph):
+    G = nx.MultiDiGraph()
+
+    # hard coding graph parameters for visualization purposes
+    G.graph = {
+        "name": "Visualization Graph",
+        "crs": {"init": "epsg:4326"},
+        "simplified": True,
+    }
+    G.add_nodes_from(digraph.nodes(data=True))
+    G.add_edges_from(
+        [(n1, n2, 0, data) for n1, n2, data in digraph.edges(data=True)]
+    )
+    return G
 
 
 if __name__ == "__main__":

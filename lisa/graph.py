@@ -509,6 +509,22 @@ class Graph_Hover(object):
         plt.savefig(filename+'.png')
 
 if __name__ == "__main__":
+
+
+    test = nx.DiGraph()
+    test.add_nodes_from([1,2,3])
+    test.add_edges_from([(1,2, {1:2}), (2,3), (3,1)])
+
+    # print(test.nodes())
+    # print(test.edges())
+
+    # print(test.edges()[1,2])
+
+    print([k for k in nx.strongly_connected_components(test)])
+
+
+
+
     bbox = Bbox(38.883_000_16, 38.878_726_840_000_006, -77.099_398_32, -77.105_007_68)
     # bbox = Name("Washington, DC")
     # bbox = Bbox(38.898191, 38.894810, -77.003528, -77.010062)

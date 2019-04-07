@@ -228,9 +228,11 @@ if __name__ == "__main__":
     node_layer = 3
     edge_layer = 2
 
+
     G = get_expanded_graph_from_mire(gdb, node_layer, edge_layer).DiGraph
 
     nodes = list(G.nodes)
+
 
     # generate paths (replace with map-matching paths later)
     paths = []
@@ -240,6 +242,7 @@ if __name__ == "__main__":
         try:
             path = nx.shortest_path(G, start, end)
             paths.append(path)
+
         except nx.exception.NetworkXNoPath as e:
             print(e)
         
