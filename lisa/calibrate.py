@@ -92,6 +92,7 @@ def create_dataframe(G: nx.DiGraph, paths: list, feature_list: list):
             neighbors = list(G.neighbors(current_node))
             n_choices = len(neighbors)
             observation_ids.append(observation_id*np.ones((n_choices,))) 
+            
             # 'i' is the "index" of the observation, or the reason why we know which observation is which
             for neighbor in neighbors:
                 current_attribute_dict = find_attribute_dict(G, current_node, neighbor, end_node)
@@ -137,8 +138,7 @@ def create_dataframe(G: nx.DiGraph, paths: list, feature_list: list):
         spec_names[spec] = spec
         specs[spec] = 'all_same'
         df[spec] = choice_features_overall[:,i]
-    print("specs", specs)
-    print("spec_names", spec_names)
+
     return (df, specs, spec_names)
 
 def create_model(dataframe: pd.DataFrame, specs: OrderedDict, spec_names: OrderedDict):
@@ -156,6 +156,9 @@ def create_model(dataframe: pd.DataFrame, specs: OrderedDict, spec_names: Ordere
     assert (len(specs) == len(spec_names))
     
     n_feats = len(specs)
+
+    print("rr\n", df["rr"])
+
     # Fit to a multinomial logit model (MNL)
     choice_model = pl.create_choice_model(data=df,
                                             alt_id_col='alt_ids',
@@ -247,7 +250,7 @@ if __name__ == "__main__":
             print(e)
         
     # print("paths: ", paths)
-    featurelist = ["bike_lane", "separate_path", "speed_limit", "traffic_volume", "crosswalk", "turn", "distance_efficiency"]
+    featurelist = ['notAtGrade', 'stops', 'signal', 'pedsignal', 'rr', 'yield', 'distance_efficiency']
     
     (df, specs, spec_names) = create_dataframe(G, paths, featurelist)
     fit_summary, summary_dict = create_model(df, specs, spec_names)
