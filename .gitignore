@@ -1,5 +1,6 @@
 
 ### Custom ###
+*.geojson
 out/*
 *.pickle
 env/
@@ -631,4 +632,3 @@ ASALocalRun/
 healthchecksdb
 
 # End of https://www.gitignore.io/api/vim,macos,linux,python,jetbrains,visualstudio,visualstudiocode
-
