@@ -9,6 +9,7 @@ import matplotlib.pyplot as plt
 from scipy.spatial import KDTree
 from expansion import create_dg, expand_graph, create_node_map
 from data import add_random_attributes
+from nx_types import NodeID
 
 # For custom legends
 import matplotlib as mpl
@@ -161,7 +162,7 @@ class GraphBuilder(object):
         init_to_expd_nodes = create_node_map(self.g_init, g_expd)
 
         # convert expanded graph's nodes to integers
-        self.g_expd_int = self.enumerate_graph(g_expd)
+        self.g_expd_int, self.expd_node_to_int = self.enumerate_graph(g_expd)
         self.init_to_expd_int_nodes = self.enumerate_node_mapping(g_expd, init_to_expd_nodes)
 
         # add auxiliary data structures
@@ -228,7 +229,7 @@ class GraphBuilder(object):
         int_edges = [(node_to_int[n1], node_to_int[n2], data)
                      for n1, n2, data in g.edges(data=True)]
 
-        return create_dg(int_nodes, int_edges)
+        return create_dg(int_nodes, int_edges), node_to_int
 
     def plot_map(self, fig_height: int = 10):
         """Helper function to the initial
@@ -257,6 +258,8 @@ class Graph(object):
             graph_builder = GraphBuilder(bound)
         else:
             graph_builder = GraphBuilder(bound = None, mire_graph = mire_graph)
+        self.graph_builder = graph_builder
+        self._expd_node_to_int = graph_builder.expd_node_to_int
         self.DiGraph = graph_builder.g_expd_int
         self.init_graph = graph_builder.g_init
         self.node_map = graph_builder.init_to_expd_int_nodes
@@ -284,6 +287,53 @@ class Graph(object):
         """
         with open(filepath, "wb") as f:
             pickle.dump(self, f)
+
+    def init_paths_to_expd(self, paths: List[List[NodeID]], only_success: bool = True):
+        """Converts a list of paths to expanded paths, optionally also returns paths that fail to convert
+
+        Args:
+            paths (List[List[NodeID]]): paths to convert to expd int nodes
+            only_success (bool): whether to also return failed paths
+
+        Returns:
+            (List[List[NodeID]]): converted paths
+            Tuple[(List[List[NodeID]]), (List[List[NodeID]])]: tuple of converted expd int paths and original paths that failed
+        """
+        expd_paths = []
+        failed_paths = []
+
+        for path in paths:
+            try:
+                expd_paths.append(self.init_path_to_expd(path))
+            except:
+                print(f"Could not convert path: {path}")
+                failed_paths.append(path)
+
+        if only_success:
+            return expd_paths
+        else:
+            return expd_paths, failed_paths
+
+    def init_path_to_expd(self, path: List[NodeID]):
+        """Converts a path of init nodes to a path of expanded integer formatted nodes
+
+        Args:
+            path (List[NodeID]): List of nodes with open street map IDs
+        
+        Returns:
+            List[NodeID]: path using expanded integer node IDs
+        """
+        # convert the init nodes to expanded nodes
+        expd_path = []
+        for i in range(len(path)-1):
+            n1, n2 = path[i], path[i+1]
+            expd_path.append((n1,n2,'out'))
+            expd_path.append((n1,n2,'in'))
+        
+        # convert expanded node to integer form
+        expd_path = [self._expd_node_to_int[node] for node in expd_path]
+
+        return expd_path
 
     def create_mdg(self):
         """Create a MultiDiGraph from self.DiGraph for visualization purposes
