@@ -114,12 +114,9 @@ def create_dataframe(G: nx.DiGraph, paths: list, feature_list: list):
             # 'i' is the "index" of the observation, or the reason why we know which observation is which
             for neighbor in neighbors:
                 
-                # only get intersection:
                 edgeID = (current_node, neighbor)
                 type = dict(G.edges[edgeID])['type']
 
-                # # new approach: only add if edge is part of an intersection
-                # if (type == "intersection"):
                 current_attribute_dict = find_attribute_dict(G, current_node, neighbor, end_node, feature_list)
                 print("current_attribute_dict: ", current_attribute_dict)
                 
@@ -143,6 +140,7 @@ def create_dataframe(G: nx.DiGraph, paths: list, feature_list: list):
             
             observation_id += 1
     print("choice_features: ", choice_features)
+
     # preparing columns for the dataframe (long) format
     overall_observation_ids = np.concatenate(observation_ids)
     choice_features_overall = np.vstack(choice_features)
@@ -161,12 +159,9 @@ def create_dataframe(G: nx.DiGraph, paths: list, feature_list: list):
     spec_names = OrderedDict()
     specs = OrderedDict()
     for i in range(n_feats):
-        # print("i: ", i)
         spec = feature_list[i]
-        # print("spec: ", spec)
         spec_names[spec] = spec
         specs[spec] = 'all_same'
-        # print("feature value: ", choice_features_overall[:,i])
         df[spec] = choice_features_overall[:,i]
 
     print("df[:10] \n", df[:10])
