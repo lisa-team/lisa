@@ -212,7 +212,7 @@ class StreetDataGenerator:
         for n1, n2, edge_data in g.edges(data=True):
             edge = (n1, n2)
             attributes[edge] = self.get_random_data(edge_data)
-            attributes.update(g.edges(data=True)[edge])
+            attributes[edge].update(g.edges[edge])
         return attributes
 
     @classmethod
