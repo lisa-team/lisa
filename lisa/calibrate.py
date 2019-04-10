@@ -116,9 +116,9 @@ def create_dataframe(G: nx.DiGraph, paths: list, feature_list: list):
                 
                 edgeID = (current_node, neighbor)
                 type = dict(G.edges[edgeID])['type']
+                
 
                 current_attribute_dict = find_attribute_dict(G, current_node, neighbor, end_node, feature_list)
-                print("current_attribute_dict: ", current_attribute_dict)
                 
                 # collect all the observations for all neighbors
                 current_observation_choice_features = []
@@ -139,8 +139,7 @@ def create_dataframe(G: nx.DiGraph, paths: list, feature_list: list):
             choice_ids.append(np.arange(n_choices))
             
             observation_id += 1
-    print("choice_features: ", choice_features)
-
+    
     # preparing columns for the dataframe (long) format
     overall_observation_ids = np.concatenate(observation_ids)
     choice_features_overall = np.vstack(choice_features)
@@ -148,7 +147,6 @@ def create_dataframe(G: nx.DiGraph, paths: list, feature_list: list):
     overall_choice_ids = np.concatenate(choice_ids)
 
     df = pd.DataFrame()
-    
 
     df['obs_ids'] = overall_observation_ids
     df['choices'] = overall_choice_indicators
@@ -163,8 +161,6 @@ def create_dataframe(G: nx.DiGraph, paths: list, feature_list: list):
         spec_names[spec] = spec
         specs[spec] = 'all_same'
         df[spec] = choice_features_overall[:,i]
-
-    print("df[:10] \n", df[:10])
 
     return (df, specs, spec_names)
 
@@ -279,12 +275,12 @@ if __name__ == "__main__":
             print(e)
         
     print("res: ", res)
-    # print(G.edges(data=True))
+    
     featurelist = ['distance_efficiency', 'has_comp', 'notAtGrade', 'stops', 'signal', 'pedsignal', 'rr', 'yield']
     
 
     (df, specs, spec_names) = create_dataframe(G, res, featurelist)
-    print(df[:10])
+
     fit_summary, summary_dict = create_model(df, specs, spec_names)
     # # print(a)
     # # print(b)
