@@ -11,6 +11,7 @@ from random import random, randrange, choice
 from nx_types import *
 
 from mire_check import *
+from ride_report_matching import *
 
 
 
@@ -44,23 +45,40 @@ def calc_distance_efficiency(edgenode1: NodeID, edgenode2: NodeID, endnode: Node
     efficiency_calculation = (progress_to_end/distance_edgenode1_edgenode2)
     return efficiency_calculation
 
-def find_attribute_dict(G: nx.DiGraph, node1: NodeID, node2: NodeID, endnode: NodeID):
+def find_attribute_dict(G: nx.DiGraph, node1: NodeID, node2: NodeID, endnode: NodeID, featurelist: list):
     """Returns the attributes of an edge from node1 to node2 in the context of G and endnode
     
     Args:
         G (nx.DiGraph): DiGraph representation of the road network
         node1 (NodeID): Starting node identifier for the given edge
         node2 (NodeID): Ending node identifier for the given edge
-        endnode (NodeID): Final node identifier for the last node in the path to help with distance calculation
-    
-    Returns:
-        attribute_dict (dict): dictionary mapping attributes to values
+        endnode (NodeID): Node identifier of last node in the path for distance calculation
+        featurelist (list(tuples)): list of features that will be considered for model fitting
+
+    Returns:# the place to handle edge cases
+        attributes (dict): dictionary with an value for each feature in the featurelist
     """
     edgeID = (node1, node2)
-    attribute_dict = dict(G.edges[edgeID])
-    attribute_dict["distance_efficiency"] = calc_distance_efficiency(node1, node2, endnode)
+    edge_data = dict(G.edges[edgeID])
+    attributes = {}
     
-    return attribute_dict
+    for feature in featurelist:
+        # software design is hard...
+        if (feature == "distance_efficiency"):
+            feature_value = calc_distance_efficiency(node1, node2, endnode)
+        else:
+            try: 
+                feature_value = edge_data[feature]
+            except KeyError: 
+                try:
+                    feature_value = edge_data['attributes'][feature]
+                except (TypeError, KeyError):
+                    feature_value = False
+        attributes[feature] = feature_value
+    assert (len(attributes) == len(featurelist)), "attributes length: " + str(len(attributes)) + "featurelist length: " + str(len(featurelist))
+    return attributes
+
+
     
 def create_dataframe(G: nx.DiGraph, paths: list, feature_list: list):
     """Create the pandas dataframe that is compatible with pylogit
@@ -68,7 +86,7 @@ def create_dataframe(G: nx.DiGraph, paths: list, feature_list: list):
     Args:
         G (nx.DiGraph): DiGraph representation of the road network
         paths (list[NodeID]): chosen list of nodeIDs the biker visited
-        feature_list (list[str]): list of features present G.nodes and G.edges output
+        feature_list (list[str]): list of (id#, featurename) tuples present in G.edges output
     
     Returns:
         (dataframe, specs, spec_names): Pandas dataframe and spec settings needed to run pylogit model
@@ -95,18 +113,25 @@ def create_dataframe(G: nx.DiGraph, paths: list, feature_list: list):
             
             # 'i' is the "index" of the observation, or the reason why we know which observation is which
             for neighbor in neighbors:
-                current_attribute_dict = find_attribute_dict(G, current_node, neighbor, end_node)
-                # iteratively adding each feature value to the observation
+                
+                # only get intersection:
+                edgeID = (current_node, neighbor)
+                type = dict(G.edges[edgeID])['type']
+
+                # # new approach: only add if edge is part of an intersection
+                # if (type == "intersection"):
+                current_attribute_dict = find_attribute_dict(G, current_node, neighbor, end_node, feature_list)
+                print("current_attribute_dict: ", current_attribute_dict)
+                
+                # collect all the observations for all neighbors
                 current_observation_choice_features = []
+
+                # iteratively adding each feature value to the observation
                 
                 for feature in feature_list:
-
-                    try:
-                        current_feature = current_attribute_dict[feature]
-                    except KeyError as e:
-                        current_feature = 0
+                    current_feature = current_attribute_dict[feature]
                     current_observation_choice_features.append(current_feature)
-                
+
                 choice_features.append(current_observation_choice_features)
 
             # marking the choiceID's choice as '1' among zeros
@@ -117,7 +142,7 @@ def create_dataframe(G: nx.DiGraph, paths: list, feature_list: list):
             choice_ids.append(np.arange(n_choices))
             
             observation_id += 1
-
+    print("choice_features: ", choice_features)
     # preparing columns for the dataframe (long) format
     overall_observation_ids = np.concatenate(observation_ids)
     choice_features_overall = np.vstack(choice_features)
@@ -125,19 +150,26 @@ def create_dataframe(G: nx.DiGraph, paths: list, feature_list: list):
     overall_choice_ids = np.concatenate(choice_ids)
 
     df = pd.DataFrame()
+    
 
     df['obs_ids'] = overall_observation_ids
     df['choices'] = overall_choice_indicators
     df['alt_ids'] = overall_choice_ids
-
+    
+    
     # The next few lines just mean the columns will be consistent across choices
     spec_names = OrderedDict()
     specs = OrderedDict()
     for i in range(n_feats):
+        # print("i: ", i)
         spec = feature_list[i]
+        # print("spec: ", spec)
         spec_names[spec] = spec
         specs[spec] = 'all_same'
+        # print("feature value: ", choice_features_overall[:,i])
         df[spec] = choice_features_overall[:,i]
+
+    print("df[:10] \n", df[:10])
 
     return (df, specs, spec_names)
 
@@ -157,10 +189,8 @@ def create_model(dataframe: pd.DataFrame, specs: OrderedDict, spec_names: Ordere
     
     n_feats = len(specs)
 
-    print("rr\n", df["rr"])
-
     # Fit to a multinomial logit model (MNL)
-    choice_model = pl.create_choice_model(data=df,
+    choice_model = pl.create_choice_model(data=dataframe,
                                             alt_id_col='alt_ids',
                                             obs_id_col='obs_ids',
                                             choice_col='choices',
@@ -168,8 +198,9 @@ def create_model(dataframe: pd.DataFrame, specs: OrderedDict, spec_names: Ordere
                                             model_type="MNL",
                                             names=spec_names)
     
-    # Specify the initial values and method for the optimization.
+    
     choice_model.fit_mle(np.zeros(n_feats), print_res = False)
+    
     fit_summary_print_output = choice_model.fit_summary
     summary_print_output = choice_model.summary
 
@@ -226,36 +257,42 @@ if __name__ == "__main__":
     # G = Graph(bbox)
     # G.save("boundgraph")
 
-    # G = Graph.from_file("dc.pickle").DiGraph
+    # # G = Graph.from_file("dc.pickle").DiGraph
     gdb = "scratch_022819.gdb"
     node_layer = 3
     edge_layer = 2
 
 
     G = get_expanded_graph_from_mire(gdb, node_layer, edge_layer).DiGraph
+    # kd = KDTreeWrapper(G.init_graph)
+    # paths = get_ride_report_paths('RideReportRoutes.geojson')[0]
+    # res = match_paths(paths, kd, G)
+    # print(res)
 
     nodes = list(G.nodes)
 
-
     # generate paths (replace with map-matching paths later)
-    paths = []
-    for i in range(5):
+    res = []
+    for i in range(1):
         start = choice(nodes)
         end = choice(nodes)
         try:
             path = nx.shortest_path(G, start, end)
-            paths.append(path)
+            res.append(path)
 
         except nx.exception.NetworkXNoPath as e:
             print(e)
         
-    # print("paths: ", paths)
-    featurelist = ['notAtGrade', 'stops', 'signal', 'pedsignal', 'rr', 'yield', 'distance_efficiency']
+    print("res: ", res)
+    # print(G.edges(data=True))
+    featurelist = ['distance_efficiency', 'has_comp', 'notAtGrade', 'stops', 'signal', 'pedsignal', 'rr', 'yield']
     
-    (df, specs, spec_names) = create_dataframe(G, paths, featurelist)
+
+    (df, specs, spec_names) = create_dataframe(G, res, featurelist)
+    print(df[:10])
     fit_summary, summary_dict = create_model(df, specs, spec_names)
-    # print(a)
-    # print(b)
-    print(sort_input_attributes(summary_dict))
+    # # print(a)
+    # # print(b)
+    # print(sort_input_attributes(summary_dict))
 
     
