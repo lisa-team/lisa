@@ -15,6 +15,7 @@ logging.basicConfig(level=logging.INFO,
                     format='%(asctime)s - %(levelname)s - %(message)s',
                     datefmt='%d-%b-%y %H:%M:%S')
 
+
 class CoordinateMatchError(Exception):
     """Exception for unfound coordinate/graph match"""
     pass
@@ -116,9 +117,9 @@ def connect_path(raw_path, G):
         else:
             path += make_best_guess(curr, nxt, G)[1:]
     if len(path) > len(raw_path)*2:
-        raise Exception('Path is too long')
+        raise Exception('Path is too long to constitute valid route')
     if len(path) < 2:
-        raise Exception('Path is too short')
+        raise Exception('Path is too short to form a route')
     return path
 
 
@@ -151,4 +152,4 @@ def make_best_guess(base, target, G):
     try:
         return nx.shortest_path(G, base, target)
     except nx.exception.NetworkXNoPath:
-        return [base]
+        raise Exception('Path cannot be connected')
