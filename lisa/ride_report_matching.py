@@ -4,6 +4,7 @@ from matching import match_single, match_trace
 import geopandas as gpd
 import pandas as pd
 import matplotlib.pyplot as plt
+from mire_check import get_expanded_graph_from_mire
 
 
 def make_osmnx_graph(name, filepath):
@@ -58,7 +59,11 @@ def match_paths(paths, kd, G):
     for raw_path in paths:
         match = match_trace(raw_path, kd, G.init_graph)
         matched_paths.append(match)
-    return list(filter(None, matched_paths))
+    expd_paths, failed_paths = G.init_paths_to_expd(
+        list(filter(None, matched_paths)), False)
+    if failed_paths:
+        raise Exception('Found invalid path(s) during graph expansion')
+    return expd_paths
 
 
 def plot_overlay(df1, df2, x1, y1, x2, y2, title):
@@ -102,7 +107,7 @@ def nodes_to_df(nodes):
     """
     coords = []
     for node in nodes:
-        x, y = G.init_graph.nodes[node]['x'], G.init_graph.nodes[node]['y']
+        x, y = G.DiGraph.nodes[node]['x'], G.DiGraph.nodes[node]['y']
         coords.append((x, y))
     return pd.DataFrame.from_records(coords, columns=['x', 'y'])
 
@@ -111,12 +116,17 @@ if __name__ == "__main__":
 
     # make_osmnx_graph("Washington DC",
     #                  '/home/udesai/SCOPE/lisa/lisa/dc.pickle')
-    G = load_osmnx_graph('dc.pickle')
+    # G = load_osmnx_graph('dc.pickle')
+    gdb = "scratch_022819.gdb"
+    node_layer = 3
+    edge_layer = 2
+    G = get_expanded_graph_from_mire(gdb, node_layer, edge_layer)
     kd = KDTreeWrapper(G.init_graph)
-    paths = get_ride_report_paths('RideReportRoutes.geojson')[:100]
+    paths = get_ride_report_paths('RideReportRoutes.geojson')
     res = match_paths(paths, kd, G)
     # raw = paths[0]
     # nodes = match_trace(raw, kd, G.init_graph)
+    # nodes = G.init_path_to_expd(nodes)
     # node_df = nodes_to_df(nodes)
     # raw_df = raw_to_df(raw)
     # plot_overlay(raw_df, node_df, 'X', 'Y', 'x', 'y', 'blue raw nodes, green osmnx nodes')
