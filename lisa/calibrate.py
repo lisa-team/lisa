@@ -59,21 +59,33 @@ def find_attribute_dict(G: nx.DiGraph, node1: NodeID, node2: NodeID, endnode: No
         attributes (dict): dictionary with an value for each feature in the featurelist
     """
     edgeID = (node1, node2)
-    edge_data = dict(G.edges[edgeID])
+    current_edge_data = dict(G.edges[edgeID])
     attributes = {}
     
+
+    # TODO: see if we can restructure MIRE graph data so I don't write shitty code
     for feature in featurelist:
         # software design is hard...
         if (feature == "distance_efficiency"):
             feature_value = calc_distance_efficiency(node1, node2, endnode)
+
+        # elif (feature == "has_comp"):
+        #     assert (len(list(G.neighbors(node2))) == 1), "There are too many neighbors to get has_comp"
+        #     neighbor_of_neighbor = list(G.neighbors(node2))[0]
+        #     next_edge_id = (node2, neighbor_of_neighbor)
+        #     next_edge_data = dict(G.edges[next_edge_id])
+        #     feature_value = next_edge_data["has_comp"]
+
         else:
-            try: 
-                feature_value = edge_data[feature]
-            except KeyError: 
-                try:
-                    feature_value = edge_data['attributes'][feature]
-                except (TypeError, KeyError):
-                    feature_value = False
+            try:
+                feature_value = current_edge_data['attributes'][feature]
+            except Exception as e:
+                print(e)
+                print("Feature " + feature + " not found")
+                print("attribute dictionary: ", current_edge_data["attributes"])
+                print("edge ID: ", edgeID)
+                feature_value = False
+        
         attributes[feature] = feature_value
     assert (len(attributes) == len(featurelist)), "attributes length: " + str(len(attributes)) + "featurelist length: " + str(len(featurelist))
     return attributes
@@ -109,36 +121,40 @@ def create_dataframe(G: nx.DiGraph, paths: list, feature_list: list):
             end_node = path[-1]
             neighbors = list(G.neighbors(current_node))
             n_choices = len(neighbors)
-            observation_ids.append(observation_id*np.ones((n_choices,))) 
-            
-            # 'i' is the "index" of the observation, or the reason why we know which observation is which
-            for neighbor in neighbors:
-                
-                edgeID = (current_node, neighbor)
-                type = dict(G.edges[edgeID])['type']
-                
 
-                current_attribute_dict = find_attribute_dict(G, current_node, neighbor, end_node, feature_list)
+
+            # attempting to add to the intersections dataframe ONLY if # choices > 1
+            if (n_choices > 1):
                 
-                # collect all the observations for all neighbors
-                current_observation_choice_features = []
+                observation_ids.append(observation_id*np.ones((n_choices,))) 
+                # 'i' is the "index" of the observation, or the reason why we know which observation is which
+                for neighbor in neighbors:
+                    
+                    edgeID = (current_node, neighbor)
 
-                # iteratively adding each feature value to the observation
+                    type = dict(G.edges[edgeID])['type'] # line that might be useful for later
+                    
+                    current_attribute_dict = find_attribute_dict(G, current_node, neighbor, end_node, feature_list)
+                    
+                    # collect all the observations for all neighbors
+                    current_observation_choice_features = []
+
+                    # iteratively adding each feature value to the observation
+                    for feature in feature_list:
+                        current_feature = current_attribute_dict[feature]
+                        current_observation_choice_features.append(current_feature)
+                    
+                    # append each possibility's features to the dataframe
+                    choice_features.append(current_observation_choice_features)
+
+                # marking the choiceID's choice as '1' among zeros
+                choice_indicators.append(np.zeros((n_choices,)))
+                chosen = neighbors.index(path[i+1])
+                choice_indicators[-1][chosen] = 1
+                # All the possible choices out at this observation:
+                choice_ids.append(np.arange(n_choices))
                 
-                for feature in feature_list:
-                    current_feature = current_attribute_dict[feature]
-                    current_observation_choice_features.append(current_feature)
-
-                choice_features.append(current_observation_choice_features)
-
-            # marking the choiceID's choice as '1' among zeros
-            choice_indicators.append(np.zeros((n_choices,)))
-            chosen = neighbors.index(path[i+1])
-            choice_indicators[-1][chosen] = 1
-            # All the possible choices out at this observation:
-            choice_ids.append(np.arange(n_choices))
-            
-            observation_id += 1
+                observation_id += 1
     
     # preparing columns for the dataframe (long) format
     overall_observation_ids = np.concatenate(observation_ids)
@@ -146,11 +162,11 @@ def create_dataframe(G: nx.DiGraph, paths: list, feature_list: list):
     overall_choice_indicators = np.concatenate(choice_indicators)
     overall_choice_ids = np.concatenate(choice_ids)
 
-    df = pd.DataFrame()
-
-    df['obs_ids'] = overall_observation_ids
-    df['choices'] = overall_choice_indicators
-    df['alt_ids'] = overall_choice_ids
+    df_intersections = pd.DataFrame()
+    
+    df_intersections['obs_ids'] = overall_observation_ids
+    df_intersections['choices'] = overall_choice_indicators
+    df_intersections['alt_ids'] = overall_choice_ids
     
     
     # The next few lines just mean the columns will be consistent across choices
@@ -160,9 +176,9 @@ def create_dataframe(G: nx.DiGraph, paths: list, feature_list: list):
         spec = feature_list[i]
         spec_names[spec] = spec
         specs[spec] = 'all_same'
-        df[spec] = choice_features_overall[:,i]
+        df_intersections[spec] = choice_features_overall[:,i]
 
-    return (df, specs, spec_names)
+    return (df_intersections, specs, spec_names)
 
 def create_model(dataframe: pd.DataFrame, specs: OrderedDict, spec_names: OrderedDict):
     """Fitting multinomial logit model to the dataframe choices with specifications
@@ -255,10 +271,6 @@ if __name__ == "__main__":
 
 
     G = get_expanded_graph_from_mire(gdb, node_layer, edge_layer).DiGraph
-    # kd = KDTreeWrapper(G.init_graph)
-    # paths = get_ride_report_paths('RideReportRoutes.geojson')[0]
-    # res = match_paths(paths, kd, G)
-    # print(res)
 
     nodes = list(G.nodes)
 
@@ -276,11 +288,11 @@ if __name__ == "__main__":
         
     print("res: ", res)
     
+    intersections_featurelist = ['distance_efficiency', 'notAtGrade', 'stops', 'signal', 'pedsignal', 'rr', 'yield']
     featurelist = ['distance_efficiency', 'has_comp', 'notAtGrade', 'stops', 'signal', 'pedsignal', 'rr', 'yield']
-    
 
-    (df, specs, spec_names) = create_dataframe(G, res, featurelist)
-
+    (df, specs, spec_names) = create_dataframe(G, res, intersections_featurelist)
+    print("dataframe\n", df[:15])
     fit_summary, summary_dict = create_model(df, specs, spec_names)
     # # print(a)
     # # print(b)
