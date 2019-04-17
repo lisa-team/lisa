@@ -119,17 +119,22 @@ if __name__ == "__main__":
 
         except nx.exception.NetworkXNoPath as e:
             print(e)
+    print(res)
     
-    intersections_featurelist = ['distance_efficiency', 'notAtGrade', 'stops', 'signal', 'pedsignal', 'rr', 'yield']
+    # approach: keep all the variables in here for now, then remove the ones that are linearly dependent
+    intersections_featurelist = ['distance_efficiency', 'grade', 'notAtGrade','stops', 'signal',  'pedsignal', 'rr', 'yield'] 
     featurelist = ['distance_efficiency', 'has_comp', 'notAtGrade', 'stops', 'signal', 'pedsignal', 'rr', 'yield']
 
     (df_intersections, _, _) = create_dataframes(G, res, intersections_featurelist)
-    print("dataframe:\n", df_intersections[:15])
+    print("dataframe:\n", df_intersections[:20])
+
+
+
     fit_summary, summary_dict = create_model(df_intersections, intersections_featurelist)
     
     import pprint
     pprint.pprint(fit_summary)
     pprint.pprint(summary_dict)
-    print(sort_input_attributes(summary_dict))
+    # print(sort_input_attributes(summary_dict))
 
     
