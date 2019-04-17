@@ -151,7 +151,7 @@ class StreetDataGenerator:
             "crosswalk": choice([True, False]),
             "separate_path": choice([True, False]),
             "speed_limit": randrange(25, 36, 5),
-            "signalized": choice(["stop_sign", "traffic_light", "no_signal"]),
+            # "signalized": choice(["stop_sign", "traffic_light", "no_signal"]),
             "traffic_volume": random() * 1000,
         }
 
