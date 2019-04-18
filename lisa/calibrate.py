@@ -1,15 +1,9 @@
 # -*- coding: utf-8 -*-
 import pylogit as pl
-import pandas as pd
-import numpy as np
 from graph import *
 from data import StreetDataGenerator
-import random
 from collections import OrderedDict
-import sys
-from random import random, randrange, choice
 from nx_types import *
-import math
 from mire_check import *
 from ride_report_matching import *
 from calibrate_helper_functions import *
@@ -110,7 +104,7 @@ if __name__ == "__main__":
 
     # generate paths (replace with map-matching paths later)
     res = []
-    for i in range(1):
+    for i in range(5):
         start = choice(nodes)
         end = choice(nodes)
         try:
@@ -119,22 +113,20 @@ if __name__ == "__main__":
 
         except nx.exception.NetworkXNoPath as e:
             print(e)
-    print(res)
     
     # approach: keep all the variables in here for now, then remove the ones that are linearly dependent
-    intersections_featurelist = ['distance_efficiency', 'grade', 'notAtGrade','stops', 'signal',  'pedsignal', 'rr', 'yield'] 
-    featurelist = ['distance_efficiency', 'has_comp', 'notAtGrade', 'stops', 'signal', 'pedsignal', 'rr', 'yield']
+    featurelist_intersections = ['distance_efficiency', 'grade', 'notAtGrade','stops', 'signal',  'pedsignal', 'rr', 'yield'] 
+    featurelist_segments = ['distance_efficiency', 'RoadType', 'Directionality', 'Shape_Length']
 
-    (df_intersections, _, _) = create_dataframes(G, res, intersections_featurelist)
-    print("dataframe:\n", df_intersections[:20])
+    (df_intersections, _) = create_dataframes(G, res, (featurelist_intersections, featurelist_segments))
+    # print("dataframe:\n", df_intersections[:20])
 
 
-
-    fit_summary, summary_dict = create_model(df_intersections, intersections_featurelist)
+    # fit_summary_intersections, summary_dict_intersections = create_model(df_intersections, featurelist_intersections)
     
-    import pprint
-    pprint.pprint(fit_summary)
-    pprint.pprint(summary_dict)
-    # print(sort_input_attributes(summary_dict))
+    # import pprint
+    # pprint.pprint(fit_summary_intersections)
+    # pprint.pprint(summary_dict_intersections)
+    # # print(sort_input_attributes(summary_dict))
 
     
