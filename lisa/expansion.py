@@ -49,7 +49,7 @@ def expand_graph(g_init: nx.MultiDiGraph):
     :returns: nx.DiGraph
     """
     in_out = create_in_out_dict(g_init)
-    segments = SegmentBuilder.create_segments(in_out)
+    segments = SegmentBuilder.create_segments(in_out, g_init)
     nodes = NodeBuilder.extract_nodes(segments)
 
     nodes = shift_nodes(g_init, nodes, segments)
@@ -149,20 +149,17 @@ class SegmentBuilder(object):
                 segments_set.add((n1, n2))
         return segments_set
 
-    def create_segments_list(self, segments):
+    def create_segments_list(self, segments, g: nx.MultiDiGraph):
         segment_list = []
         for segment in segments:
-            if self.complement_segment(segment) in segments:
-                has_comp = True
-            else:
-                has_comp = False
-            segment_list.append(
-                (segment[0], segment[1], {"type": "segment", "has_comp": has_comp})
-            )
+            data = g.edges[(segment[0][0], segment[0][1], 0)]
+            data["type"] = "segment"
+            data["has_comp"] = self.complement_segment(segment) in segments
+            segment_list.append((segment[0], segment[1], data))
         return segment_list
 
     @classmethod
-    def create_segments(cls, in_out):
+    def create_segments(cls, in_out, g: nx.MultiDiGraph):
         segments_set = cls().create_segments_set(in_out)
-        segments_list = cls().create_segments_list(segments_set)
+        segments_list = cls().create_segments_list(segments_set, g)
         return segments_list
