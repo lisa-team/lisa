@@ -2,13 +2,9 @@
 import pandas as pd
 import numpy as np
 from graph import *
-# from data import StreetDataGenerator
-from collections import OrderedDict
 from random import random, randrange, choice
-from nx_types import *
 import math
-# from mire_check import *
-# from ride_report_matching import *
+import pprint
 
 def calc_distance_efficiency(G: nx.DiGraph, edgenode1: NodeID, edgenode2: NodeID, endnode: NodeID):
     """Takes in an edge and the endpoint to calculate how well the edge choice leads to the endpoint
@@ -48,44 +44,49 @@ def find_attribute_dict(G: nx.DiGraph, node1: NodeID, node2: NodeID, endnode: No
         node1 (NodeID): Starting node identifier for the given edge
         node2 (NodeID): Ending node identifier for the given edge
         endnode (NodeID): Node identifier of last node in the path for distance calculation
-        featurelist (list(tuples)): list of features that will be considered for model fitting
+        featurelist (list): list of features that will be considered for model fitting.
 
-    Returns:# the place to handle edge cases
+    Returns:
         attributes (dict): dictionary with an value for each feature in the featurelist
     """
     edgeID = (node1, node2)
     current_edge_data = dict(G.edges[edgeID])
     attributes = {}
     
-    for feature in featurelist:
-        # software design is hard...
-        if (feature == "distance_efficiency"):
-            feature_value = calc_distance_efficiency(G, node1, node2, endnode)
+    try:
+        for feature in featurelist:
+            if (feature == "distance_efficiency"):
+                feature_value = calc_distance_efficiency(G, node1, node2, endnode)
 
-        else:
-            try:
+            else:
                 feature_value = current_edge_data['attributes'][feature]
-            except Exception as e:
-                feature_value = -1
+            attributes[feature] = feature_value
         
-        attributes[feature] = feature_value
-    assert (len(attributes) == len(featurelist)), "attributes length: " + str(len(attributes)) + "featurelist length: " + str(len(featurelist))
-    return attributes
+        assert (len(attributes) == len(featurelist)), "attributes length: " + str(len(attributes)) + " featurelist length: " + str(len(featurelist))
 
+        return attributes
+    
+    except Exception:
+        return
 
     
-def create_dataframes(G: nx.DiGraph, paths: list, feature_list: list):
+def create_dataframes(G: nx.DiGraph, paths: list, featurelists: tuple):
     """Create the pandas dataframe that is compatible with pylogit
     
     Args:
         G (nx.DiGraph): DiGraph representation of the road network
         paths (list[NodeID]): chosen list of nodeIDs the biker visited
-        feature_list (list[str]): list of (id#, featurename) tuples present in G.edges output
+        featurelists tuple(list): list of features that will be considered for model fitting. Structured like (intersections list, segments list)
     
     Returns:
         (df_intersections, df_segments, df_turns): Pandas dataframes needed to run intersections, segments, and turns pylogit model
     """
-    n_feats = len(feature_list)
+
+    (intersection_features, segment_features) = featurelists
+
+
+    # INTERSECTION features!!
+    n_feats = len(intersection_features)
     choice_features = []
     observation_ids = []
     choice_indicators = []
@@ -104,27 +105,35 @@ def create_dataframes(G: nx.DiGraph, paths: list, feature_list: list):
             neighbors = list(G.neighbors(current_node))
             n_choices = len(neighbors)
 
+            has_attributes = True
 
-            # attempting to add to the intersections dataframe ONLY if # choices > 1
-            if (n_choices > 1):
+            # check if there are attributes from this node to its neighbors:
+            for neighbor in neighbors:
+                edgeID = (current_node, neighbor)
+                has_attribute_dict = find_attribute_dict(G, current_node, neighbor, end_node, intersection_features)
                 
+                if (not has_attribute_dict):
+                    has_attributes = False
+            
+
+            # attempting to add to the intersections dataframe ONLY if # choices > 1 and there's data in the attributes section
+            if ((n_choices > 1) and (has_attributes)):
+            # if (has_attributes):    
                 observation_ids.append(observation_id*np.ones((n_choices,))) 
                 
                 # 'i' is the "index" of the observation, or the reason why we know which observation is which
                 for neighbor in neighbors:
                     
                     edgeID = (current_node, neighbor)
+                    intersection_attribute_dict = find_attribute_dict(G, current_node, neighbor, end_node, intersection_features)
+                    # type = dict(G.edges[edgeID])['type'] # line that might be useful for later
 
-                    type = dict(G.edges[edgeID])['type'] # line that might be useful for later
-                    
-                    current_attribute_dict = find_attribute_dict(G, current_node, neighbor, end_node, feature_list)
-                    
                     # collect all the observations for all neighbors
                     current_observation_choice_features = []
 
                     # iteratively adding each feature value to the observation
-                    for feature in feature_list:
-                        current_feature = current_attribute_dict[feature]
+                    for feature in intersection_features:
+                        current_feature = intersection_attribute_dict[feature]
                         current_observation_choice_features.append(current_feature)
                     
                     # append each possibility's features to the dataframe
@@ -134,9 +143,9 @@ def create_dataframes(G: nx.DiGraph, paths: list, feature_list: list):
                 choice_indicators.append(np.zeros((n_choices,)))
                 chosen = neighbors.index(path[i+1])
                 choice_indicators[-1][chosen] = 1
+                
                 # All the possible choices out at this observation:
                 choice_ids.append(np.arange(n_choices))
-                
                 observation_id += 1
     
     # preparing columns for the dataframe (long) format
@@ -147,14 +156,13 @@ def create_dataframes(G: nx.DiGraph, paths: list, feature_list: list):
 
     df_intersections = pd.DataFrame()
     df_segments = pd.DataFrame()
-    df_turns = pd.DataFrame()
     
     df_intersections['obs_ids'] = overall_observation_ids
     df_intersections['choices'] = overall_choice_indicators
     df_intersections['alt_ids'] = overall_choice_ids
     
     for i in range(n_feats):
-        spec = feature_list[i]
+        spec = intersection_features[i]
         df_intersections[spec] = choice_features_overall[:,i]
 
-    return (df_intersections, df_segments, df_turns)
+    return (df_intersections, df_segments)
