@@ -104,7 +104,7 @@ if __name__ == "__main__":
 
     # generate paths (replace with map-matching paths later)
     res = []
-    for i in range(5):
+    for i in range(2):
         start = choice(nodes)
         end = choice(nodes)
         try:
@@ -113,16 +113,17 @@ if __name__ == "__main__":
 
         except nx.exception.NetworkXNoPath as e:
             print(e)
-    
+    # print("res: ", res)
+
     # approach: keep all the variables in here for now, then remove the ones that are linearly dependent
     featurelist_intersections = ['distance_efficiency', 'grade', 'notAtGrade','stops', 'signal',  'pedsignal', 'rr', 'yield'] 
     featurelist_segments = ['distance_efficiency', 'RoadType', 'Directionality', 'Shape_Length']
 
     (df_intersections, _) = create_dataframes(G, res, (featurelist_intersections, featurelist_segments))
-    # print("dataframe:\n", df_intersections[:20])
+    print("dataframe:\n", df_intersections[:20])
 
 
-    # fit_summary_intersections, summary_dict_intersections = create_model(df_intersections, featurelist_intersections)
+    fit_summary_intersections, summary_dict_intersections = create_model(df_intersections, featurelist_intersections)
     
     # import pprint
     # pprint.pprint(fit_summary_intersections)
