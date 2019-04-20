@@ -7,6 +7,8 @@ import matplotlib.pyplot as plt
 from mire_check import get_expanded_graph_from_mire
 
 
+
+
 def make_osmnx_graph(name, filepath):
     """Fetch OSM from name and pickle graph object to a file
 
@@ -117,13 +119,65 @@ if __name__ == "__main__":
     # make_osmnx_graph("Washington DC",
     #                  '/home/udesai/SCOPE/lisa/lisa/dc.pickle')
     # G = load_osmnx_graph('dc.pickle')
+
+
     gdb = "scratch_022819.gdb"
     node_layer = 3
     edge_layer = 2
     G = get_expanded_graph_from_mire(gdb, node_layer, edge_layer)
     kd = KDTreeWrapper(G.init_graph)
-    paths = get_ride_report_paths('RideReportRoutes.geojson')
-    res = match_paths(paths, kd, G)
+
+    # import osmnx as ox
+    # ox.plot_graph(G.init_graph)
+
+    matched_pickle_paths = []
+
+    # paths = get_ride_report_paths('RideReportRoutes.geojson')
+    import os
+    import pickle
+
+    PATH = "Z:\\SCOPE_Teams_2018-19\\Volpe_Santos\\data\\ddot\\processed\\"
+
+    data_files = os.listdir(PATH)
+
+    os.chdir("Z:\\")
+
+    for data_file in data_files:
+        filename = PATH + data_file
+
+        if data_file.endswith(".csv"):
+            pass
+        elif data_file.endswith(".p"):
+            try:
+                with open(str(filename), "rb") as fp:
+
+                    tmp = pickle.load(fp)
+                    # print(tmp[0])
+                    tmp = [[(tup[1],tup[0]) for tup in route[3]] for route in tmp]
+
+                    print(tmp[0])
+
+                    res = match_paths(tmp, kd, G)
+
+    
+                    matched_pickle_paths.append(res)
+
+            except Exception as ex:
+                print(3, ex, filename)
+                continue
+
+    print(matched_pickle_paths[0])
+
+    with open("Z:\\SCOPE_Teams_2018-19\\Volpe_Santos\\data\\ddot\\processed\\ride_report_matching.final", "wb") as fp:
+        pickle.dump(matched_pickle_paths, fp)
+
+
+    # res = match_paths(paths, kd, G)
+
+
+
+
+
     # raw = paths[0]
     # nodes = match_trace(raw, kd, G.init_graph)
     # nodes = G.init_path_to_expd(nodes)
