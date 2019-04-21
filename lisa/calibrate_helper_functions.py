@@ -53,6 +53,11 @@ def find_attribute_dict(G: nx.DiGraph, node1: NodeID, node2: NodeID, endnode: No
     edgeID              = (node1, node2)
     current_edge_data   = dict(G.edges[edgeID])
     attributes          = {}
+
+    if not current_edge_data:
+        print("NO EDGE DATA FOR ATTR DICT")
+    else:
+        print("CURRENT_EDGE_DATA", current_edge_data)
     
     try:
         for feature in featurelist:
@@ -70,7 +75,8 @@ def find_attribute_dict(G: nx.DiGraph, node1: NodeID, node2: NodeID, endnode: No
 
         return attributes
 
-    except Exception:
+    except Exception as ex:
+        print("EXCEPTION:", ex)
         return
 
 

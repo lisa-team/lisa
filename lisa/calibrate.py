@@ -95,6 +95,9 @@ def create_dataframes(G: nx.DiGraph, paths: list, featurelists: tuple):
                         print("EdgeID: ", (neighbor_of_neighbor, neighbors_of_neighbor_of_neighbor[0]))
                         current_intersection_data = find_attribute_dict(G, neighbor_of_neighbor, neighbors_of_neighbor_of_neighbor[0], end_node, intersection_features)
 
+                        for j in neighbors_of_neighbor_of_neighbor:
+                            print(G.edges[neighbor_of_neighbor, j])
+
 
                         # collect all the observations for all neighbors
                         current_observation_choice_features = []
@@ -109,6 +112,7 @@ def create_dataframes(G: nx.DiGraph, paths: list, featurelists: tuple):
 
                     # marking the choiceID's choice as '1' among zeros
                     choice_indicators.append(np.zeros((n_choices,)))
+                    print("NEIGHBORS:", neighbors, "path:", path, "i+1:", i+1)
                     chosen = neighbors.index(path[i+1])
                     choice_indicators[-1][chosen] = 1
                     
@@ -235,7 +239,7 @@ if __name__ == "__main__":
 
     # generate paths (replace with map-matching paths later)
     res = []
-    for i in range(5):
+    for i in range(1):
         start = choice(nodes)
         end = choice(nodes)
         try:
@@ -244,7 +248,6 @@ if __name__ == "__main__":
 
         except nx.exception.NetworkXNoPath as e:
             print(e)
-
     # print("res: ", res)
 
     # approach: keep all the variables in here for now, then remove the ones that are linearly dependent
@@ -256,7 +259,6 @@ if __name__ == "__main__":
 
 
     fit_summary_intersections, summary_dict_intersections = create_model(df_intersections, featurelist_intersections)
-
     
     # import pprint
     # pprint.pprint(fit_summary_intersections)
