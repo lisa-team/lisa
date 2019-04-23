@@ -155,7 +155,7 @@ if __name__ == "__main__":
                     # print(tmp[0])
                     tmp = [[(tup[1],tup[0]) for tup in route[3]] for route in tmp]
 
-                    print(tmp[0])
+                    # print(tmp[0])
 
                     res = match_paths(tmp, kd, G)
 

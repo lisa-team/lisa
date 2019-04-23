@@ -51,25 +51,26 @@ def create_dataframes(G: nx.DiGraph, paths: list, featurelists: tuple):
 
                 # check if there are attributes in neighboring segments and neighboring intersections:
                 for neighbor in neighbors:
+
+
                     
                     neighbors_of_neighbor = list(G.neighbors(neighbor))
 
                     neighbor_of_neighbor = neighbors_of_neighbor[0]
                     neighbors_of_neighbor_of_neighbor = list(G.neighbors(neighbor_of_neighbor))
 
+
                     if (neighbor_of_neighbor and neighbors_of_neighbor_of_neighbor):
 
                         has_segment_attribute_dict = find_attribute_dict(G, neighbor, neighbor_of_neighbor, end_node, segment_features)
                         
-                        has_intersection_attribute_dict = find_attribute_dict(G, neighbor_of_neighbor, neighbors_of_neighbor_of_neighbor[-1], end_node, intersection_features)
+                        has_intersection_attribute_dict = find_attribute_dict(G, neighbor_of_neighbor, neighbors_of_neighbor_of_neighbor[0], end_node, intersection_features)
 
                     data_present = (has_segment_attribute_dict and has_intersection_attribute_dict)
                     
-                    if (not data_present):
-                        print("data not present")
+                    if not (data_present and (has_segment_attribute_dict["type"] == "segment") and (has_intersection_attribute_dict["type"] == "intersection")):
                         good_attributes = False
-                    else:
-                        good_attributes = (has_segment_attribute_dict["type"] == "segment") and (has_intersection_attribute_dict["type"] == "intersection")
+                        break
 
 
                 # attempting to add to the intersections dataframe ONLY if # choices > 1 and there's data in the attributes section
@@ -88,6 +89,9 @@ def create_dataframes(G: nx.DiGraph, paths: list, featurelists: tuple):
                         
                         
                         neighbors_of_neighbor_of_neighbor = list(G.neighbors(neighbor_of_neighbor))
+
+                        if not neighbors_of_neighbor_of_neighbor:
+                            break
                         
                         print("current_node: ", current_node)
                         print("current node's neighbor ", neighbor)
@@ -233,36 +237,84 @@ if __name__ == "__main__":
     edge_layer = 2
 
 
-    G = get_expanded_graph_from_mire(gdb, node_layer, edge_layer).DiGraph
+    G = get_expanded_graph_from_mire(gdb, node_layer, edge_layer)
 
-    nodes = list(G.nodes)
+    kd = KDTreeWrapper(G.init_graph)
+
 
     # generate paths (replace with map-matching paths later)
-    res = []
-    for i in range(1):
-        start = choice(nodes)
-        end = choice(nodes)
-        try:
-            path = nx.shortest_path(G, start, end)
-            res.append(path)
+    # res = []
+    # for i in range(1):
+    #     start = choice(nodes)
+    #     end = choice(nodes)
+    #     try:
+    #         path = nx.shortest_path(G, start, end)
+    #         res.append(path)
 
-        except nx.exception.NetworkXNoPath as e:
-            print(e)
+    #     except nx.exception.NetworkXNoPath as e:
+    #         print(e)
     # print("res: ", res)
 
+
+    matched_pickle_paths = []
+
+    import os
+    import pickle
+
+    PATH = "Z:\\SCOPE_Teams_2018-19\\Volpe_Santos\\data\\ddot\\processed\\"
+
+    data_files = os.listdir(PATH)
+
+    os.chdir("Z:\\")
+
+    for data_file in data_files:
+        filename = PATH + data_file
+
+        if data_file.endswith(".csv"):
+            pass
+        elif data_file.endswith(".p"):
+            try:
+                with open(str(filename), "rb") as fp:
+
+                    tmp = pickle.load(fp)
+                    # print(tmp[0])
+                    tmp = [[(tup[1],tup[0]) for tup in route[3]] for route in tmp]
+
+                    # print(tmp[0])
+
+                    result = match_paths(tmp, kd, G)
+
+    
+                    matched_pickle_paths.append(result)
+
+            except Exception as ex:
+                print(3, ex, filename)
+                continue
+
+    # print(matched_pickle_paths[0])
+
+    res = []
+
+    for file_routes in matched_pickle_paths:
+        res.extend(file_routes)
+
+    print(res[0])
+
+
     # approach: keep all the variables in here for now, then remove the ones that are linearly dependent
-    featurelist_intersections = ['distance_efficiency', 'grade', 'notAtGrade','stops', 'signal',  'pedsignal', 'rr', 'yield'] 
+    featurelist_intersections = ['distance_efficiency','stops', 'signal', 'grade'] 
     featurelist_segments = ['distance_efficiency', 'RoadType', 'Directionality', 'Shape_Length']
 
-    (df_intersections, _) = create_dataframes(G, res, (featurelist_intersections, featurelist_segments))
-    # print("dataframe:\n", df_intersections[:20])
+    (df_intersections, _) = create_dataframes(G.DiGraph, res, (featurelist_intersections, featurelist_segments))
+    print("dataframe:\n", df_intersections[:20])
+
 
 
     fit_summary_intersections, summary_dict_intersections = create_model(df_intersections, featurelist_intersections)
     
-    # import pprint
-    # pprint.pprint(fit_summary_intersections)
-    # pprint.pprint(summary_dict_intersections)
-    # # print(sort_input_attributes(summary_dict))
+    import pprint
+    pprint.pprint(fit_summary_intersections)
+    pprint.pprint(summary_dict_intersections)
+    print(sort_input_attributes(summary_dict_intersections))
 
     
