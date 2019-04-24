@@ -67,7 +67,7 @@ def match_paths(paths, kd, G):
     expd_paths, failed_paths = G.init_paths_to_expd(
         list(filter(None, matched_paths)), False)
     if failed_paths:
-        raise Exception('Found invalid path(s) during graph expansion')
+        raise Exception('Found ' + str(len(failed_paths)) + ' invalid path(s) during graph expansion')
 
     print("EXPD_PATHS:", expd_paths)
     return expd_paths

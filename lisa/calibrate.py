@@ -267,6 +267,10 @@ if __name__ == "__main__":
 
     os.chdir("Z:\\")
 
+
+    node_sum = 0
+    num_nodes = 0
+
     for data_file in data_files:
         filename = PATH + data_file
 
@@ -284,8 +288,10 @@ if __name__ == "__main__":
 
                     result = match_paths(tmp, kd, G)
 
-                    print(result)
+                    # print(result)
 
+                    node_sum += len(result)
+                    num_nodes += 1
 
                     matched_pickle_paths.append(result)
 
@@ -300,11 +306,13 @@ if __name__ == "__main__":
     for file_routes in matched_pickle_paths:
         res.extend(file_routes)
 
-    print(res)
+
+    print("AVERAGE EXPD PATH LENGTH:", node_sum/num_nodes)
+    print("FINAL NUMBER OF ROUTES ENTERING LOGIT:", len(res))
 
 
     # approach: keep all the variables in here for now, then remove the ones that are linearly dependent
-    featurelist_intersections = ['distance_efficiency','stops', 'signal', 'grade'] 
+    featurelist_intersections = ['distance_efficiency','stops', 'signal'] 
     featurelist_segments = ['distance_efficiency', 'RoadType', 'Directionality', 'Shape_Length']
 
     (df_intersections, _) = create_dataframes(G.DiGraph, res, (featurelist_intersections, featurelist_segments))

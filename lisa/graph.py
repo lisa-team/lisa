@@ -1,4 +1,4 @@
-from collections import defaultdict
+from collections import defaultdict, OrderedDict
 from typing import Union, List, Dict
 import pickle
 import osmnx as ox
@@ -289,6 +289,9 @@ class Graph(object):
         with open(filepath, "wb") as f:
             pickle.dump(self, f)
 
+    def remove_duplicate_nodes(self, path):
+        return list(OrderedDict.fromkeys(path))
+
     def init_paths_to_expd(self, paths: List[List[NodeID]], only_success: bool = True):
         """Converts a list of paths to expanded paths, optionally also returns paths that fail to convert
 
@@ -305,6 +308,7 @@ class Graph(object):
 
         for path in paths:
             try:
+                path = self.remove_duplicate_nodes(path)
                 expd_paths.append(self.init_path_to_expd(path))
             except Exception as ex:
                 print("Could not convert path: " , ex, path)
@@ -336,6 +340,7 @@ class Graph(object):
         # convert expanded node to integer form
         expd_path = [self._expd_node_to_int[node] for node in expd_path]
 
+        print("INIT PATH:", path)
         print("EXPD PATH:", expd_path)
 
         if self.is_valid_expd_path(expd_path):
