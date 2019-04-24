@@ -88,17 +88,17 @@ def check_path_validity(G: nx.DiGraph, path):
     Args:
         path ([nx.nodeID]): List of Node IDs needed 
     """
-    # for node_index in range(len(path)-1):
-    #     current_node = path[node_index]
-    #     next_node = path[node_index + 1]
+    for node_index in range(len(path)-1):
+        current_node = path[node_index]
+        next_node = path[node_index + 1]
 
-    #     print("CURRENT NODE TYPE:", type(current_node))
+        print("CURRENT NODE TYPE:", type(current_node))
         
-    #     current_node_neighbors = set(G.neighbors(current_node))
-    #     if next_node not in current_node_neighbors:
-    #         print("node_index: ", node_index)
-    #         print(current_node, next_node, current_node_neighbors)
-    #         return False
+        current_node_neighbors = set(G.neighbors(current_node))
+        if next_node not in current_node_neighbors:
+            print("node_index: ", node_index)
+            print(current_node, next_node, current_node_neighbors)
+            return False
 
     return True
 

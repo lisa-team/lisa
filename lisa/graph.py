@@ -11,6 +11,7 @@ from expansion import create_dg, expand_graph, create_node_map
 from data import add_random_attributes
 from nx_types import NodeID
 
+
 # For custom legends
 import matplotlib as mpl
 from matplotlib.lines import Line2D
@@ -305,8 +306,8 @@ class Graph(object):
         for path in paths:
             try:
                 expd_paths.append(self.init_path_to_expd(path))
-            except:
-                print(f"Could not convert path: {path}")
+            except Exception as ex:
+                print("Could not convert path: " , ex, path)
                 failed_paths.append(path)
 
         if only_success:
@@ -324,16 +325,95 @@ class Graph(object):
             List[NodeID]: path using expanded integer node IDs
         """
         # convert the init nodes to expanded nodes
+
         expd_path = []
         for i in range(len(path)-1):
             n1, n2 = path[i], path[i+1]
             expd_path.append((n1,n2,'out'))
-            expd_path.append((n1,n2,'in'))
+            # expd_path.append((n1,n2,'in'))
+            expd_path.append((n2,n1,'in'))
         
         # convert expanded node to integer form
         expd_path = [self._expd_node_to_int[node] for node in expd_path]
 
-        return expd_path
+        print("EXPD PATH:", expd_path)
+
+        if self.is_valid_expd_path(expd_path):
+
+            return expd_path
+
+        else:
+            # print(expd_path)
+            raise Exception("init_path_to_expd: Path is invalid")
+
+
+    def is_valid_path(self, osmnx_path):
+        """Check if osmnx_path is valid.
+
+        Args:
+            osmnx_path (List[Tuple[float, float]]): a list of (lat, long)
+                coordinates
+            G: Graph object
+        Returns:
+            boolean: True if node ids are connected to form valid osmnx path,
+                otherwise False
+        """
+        for i in range(0, len(osmnx_path)-1):
+            curr = osmnx_path[i]
+            nxt = osmnx_path[i+1]
+            if not self.are_neighbors(curr, nxt):
+                return False
+        return True
+
+
+    def is_valid_expd_path(self, osmnx_path):
+        """Check if osmnx_path is valid.
+
+        Args:
+            osmnx_path (List[Tuple[float, float]]): a list of (lat, long)
+                coordinates
+            G: Graph object
+        Returns:
+            boolean: True if node ids are connected to form valid osmnx path,
+                otherwise False
+        """
+        for i in range(0, len(osmnx_path)-1):
+            curr = osmnx_path[i]
+            nxt = osmnx_path[i+1]
+            if not self.are_expd_neighbors(curr, nxt):
+                return False
+        return True
+
+    def are_neighbors(self, base, target):
+        """Check if target is a neighbor of base.
+
+        Args:
+            base (int): osmnx node id
+            target (int): osmnx node id
+            G: Graph object
+        Returns:
+            boolean
+        """
+        neighbors = set(self.init_graph.neighbors(base))
+        if target in neighbors:
+            return True
+        return False
+
+    def are_expd_neighbors(self, base, target):
+        """Check if target is a neighbor of base.
+
+        Args:
+            base (int): osmnx node id
+            target (int): osmnx node id
+            G: Graph object
+        Returns:
+            boolean
+        """
+        neighbors = set(self.DiGraph.neighbors(base))
+        if target in neighbors:
+            return True
+        return False
+
 
     def create_mdg(self):
         """Create a MultiDiGraph from self.DiGraph for visualization purposes

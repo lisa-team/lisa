@@ -284,7 +284,9 @@ if __name__ == "__main__":
 
                     result = match_paths(tmp, kd, G)
 
-    
+                    print(result)
+
+
                     matched_pickle_paths.append(result)
 
             except Exception as ex:
@@ -298,7 +300,7 @@ if __name__ == "__main__":
     for file_routes in matched_pickle_paths:
         res.extend(file_routes)
 
-    print(res[0])
+    print(res)
 
 
     # approach: keep all the variables in here for now, then remove the ones that are linearly dependent

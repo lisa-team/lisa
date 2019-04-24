@@ -59,12 +59,17 @@ def match_paths(paths, kd, G):
     """
     matched_paths = []
     for raw_path in paths:
-        match = match_trace(raw_path, kd, G.init_graph)
+        match = match_trace(raw_path, kd, G)
         matched_paths.append(match)
+
+    print("MATCHED_PATHS:", matched_paths)
+
     expd_paths, failed_paths = G.init_paths_to_expd(
         list(filter(None, matched_paths)), False)
     if failed_paths:
         raise Exception('Found invalid path(s) during graph expansion')
+
+    print("EXPD_PATHS:", expd_paths)
     return expd_paths
 
 
