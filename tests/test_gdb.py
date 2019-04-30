@@ -1,3 +1,5 @@
+from .context import lisa
+from lisa import *
 import os
 import pytest
 import matplotlib.pyplot as plt
