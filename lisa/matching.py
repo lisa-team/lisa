@@ -52,7 +52,7 @@ def match_trace(trace, kd, G):
     try:
         osmnx_match = get_closest_osmnx_path(trace, kd, G)
         match = connect_path(osmnx_match, G)
-        if is_valid_path(match, G):
+        if G.is_valid_path(match):
             return match
     except Exception as e:
         logging.info(e)
@@ -70,7 +70,7 @@ def get_closest_osmnx_path(trace, kd, G):
     """
     path = []
     for coord in trace:
-        closest_node, d = nearest_node(coord, kd, G)
+        closest_node, d = nearest_node(coord, kd, G.init_graph)
         if d > 0.00001:
             continue
         path.append(closest_node)
@@ -79,23 +79,23 @@ def get_closest_osmnx_path(trace, kd, G):
     return path
 
 
-def is_valid_path(osmnx_path, G):
-    """Check if osmnx_path is valid.
+# def is_valid_path(osmnx_path, G):
+#     """Check if osmnx_path is valid.
 
-    Args:
-        osmnx_path (List[Tuple[float, float]]): a list of (lat, long)
-            coordinates
-        G: Graph object
-    Returns:
-        boolean: True if node ids are connected to form valid osmnx path,
-            otherwise False
-    """
-    for i in range(0, len(osmnx_path)-1):
-        curr = osmnx_path[i]
-        nxt = osmnx_path[i+1]
-        if not are_neighbors(curr, nxt, G):
-            return False
-    return True
+#     Args:
+#         osmnx_path (List[Tuple[float, float]]): a list of (lat, long)
+#             coordinates
+#         G: Graph object
+#     Returns:
+#         boolean: True if node ids are connected to form valid osmnx path,
+#             otherwise False
+#     """
+#     for i in range(0, len(osmnx_path)-1):
+#         curr = osmnx_path[i]
+#         nxt = osmnx_path[i+1]
+#         if not are_neighbors(curr, nxt, G):
+#             return False
+#     return True
 
 
 def connect_path(raw_path, G):
@@ -112,10 +112,10 @@ def connect_path(raw_path, G):
     for i in range(0, len(raw_path)-1):
         curr = raw_path[i]
         nxt = raw_path[i+1]
-        if are_neighbors(curr, nxt, G):
+        if G.are_neighbors(curr, nxt):
             path.append(nxt)
         else:
-            path += make_best_guess(curr, nxt, G)[1:]
+            path += make_best_guess(curr, nxt, G.init_graph)[1:]
     if len(path) > len(raw_path)*2:
         raise Exception('Path is too long to constitute valid route')
     if len(path) < 2:
@@ -123,20 +123,20 @@ def connect_path(raw_path, G):
     return path
 
 
-def are_neighbors(base, target, G):
-    """Check if target is a neighbor of base.
+# def are_neighbors(base, target, G):
+#     """Check if target is a neighbor of base.
 
-    Args:
-        base (int): osmnx node id
-        target (int): osmnx node id
-        G: Graph object
-    Returns:
-        boolean
-    """
-    neighbors = set(G.neighbors(base))
-    if target in neighbors:
-        return True
-    return False
+#     Args:
+#         base (int): osmnx node id
+#         target (int): osmnx node id
+#         G: Graph object
+#     Returns:
+#         boolean
+#     """
+#     neighbors = set(G.neighbors(base))
+#     if target in neighbors:
+#         return True
+#     return False
 
 
 def make_best_guess(base, target, G):
@@ -145,7 +145,7 @@ def make_best_guess(base, target, G):
     Args:
         base (int): osmnx node id
         target (int): osmnx node id
-        G: Graph object
+        G: MultiDiGraph object
     Returns:
         (List[int]): list of integer node ids
     """

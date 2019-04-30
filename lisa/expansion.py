@@ -89,6 +89,7 @@ class IntersectionBuilder(object):
             g (nx.MultiDiGraph): input graph used to pull node data
             in_out (Dict): in out dictionary of the init_graph nodes
         """
+        edgeID = 0
         intersections = []
         for k, v in in_out.items():
             # every in connects to every out - unless same node
@@ -97,8 +98,16 @@ class IntersectionBuilder(object):
                 for n_out in v["out"]:
                     n2 = (k, n_out, "out")
                     if n_in != n_out:
-                        edge_data = g.nodes(data=True)[n1[1]]
+                        edge_data = {}
+
+                        edge_data.update(g.nodes(data=True)[k])
                         edge_data["type"] = "intersection"
+
+
+                        edge_data["edgeID"] = edgeID
+                        edgeID+=1
+
+
                         intersections.append((n1, n2, edge_data))
 
         return intersections
