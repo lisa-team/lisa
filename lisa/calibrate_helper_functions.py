@@ -102,3 +102,31 @@ def check_path_validity(G: nx.DiGraph, path):
 
     return True
 
+def check_for_data(G, current_node, neighbors, end_node, segment_features, intersection_features):
+    good_attributes = True
+
+    has_segment_attribute_dict      = None 
+    has_intersection_attribute_dict = None
+
+    # check if there are attributes in neighboring segments and neighboring intersections:
+    for neighbor in neighbors:
+
+        neighbors_of_neighbor = list(G.neighbors(neighbor))
+
+        neighbor_of_neighbor = neighbors_of_neighbor[0]
+        neighbors_of_neighbor_of_neighbor = list(G.neighbors(neighbor_of_neighbor))
+
+
+        if (neighbor_of_neighbor and neighbors_of_neighbor_of_neighbor):
+
+            has_segment_attribute_dict = find_attribute_dict(G, neighbor, neighbor_of_neighbor, end_node, segment_features)
+            
+            has_intersection_attribute_dict = find_attribute_dict(G, neighbor_of_neighbor, neighbors_of_neighbor_of_neighbor[0], end_node, intersection_features)
+
+        data_present = (has_segment_attribute_dict and has_intersection_attribute_dict)
+        
+        if not (data_present and (has_segment_attribute_dict["type"] == "segment") and (has_intersection_attribute_dict["type"] == "intersection")):
+            good_attributes = False
+            break
+    
+    return good_attributes

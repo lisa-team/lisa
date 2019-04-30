@@ -25,7 +25,11 @@ def create_dataframes(G: nx.DiGraph, paths: list, featurelists: tuple):
 
     # INTERSECTION features!!
     n_intersection_feats            = len(intersection_features)
+
+    n_segment_feats                 = len(segment_features)
     choice_features_intersections   = []
+    choice_features_segments        = []
+
     observation_ids                 = []
     choice_indicators               = []
     choice_ids                      = []
@@ -35,100 +39,74 @@ def create_dataframes(G: nx.DiGraph, paths: list, featurelists: tuple):
         
         path = paths[path_index]
 
-        if check_path_validity(G, path):
 
-            for i in range(len(path)-1):
-                print("\n\n\n\n")
-                current_node = path[i]
-                end_node = path[-1]
-                neighbors = list(G.neighbors(current_node))
-                n_choices = len(neighbors)
+        for i in range(len(path)-1):
+            print("\n\n\n\n")
+            current_node = path[i]
+            end_node = path[-1]
+            neighbors = list(G.neighbors(current_node))
+            n_choices = len(neighbors)
 
-                good_attributes = True
+            good_attributes = check_for_data(G, current_node, neighbors, end_node, segment_features, intersection_features)
 
-                has_segment_attribute_dict      = None 
-                has_intersection_attribute_dict = None
-
-                # check if there are attributes in neighboring segments and neighboring intersections:
-                for neighbor in neighbors:
-
-
+            # attempting to add to the intersections dataframe ONLY if # choices > 1 and there's data in the attributes section
+            if ((n_choices > 1) and (good_attributes)):
+                
+                observation_ids.append(observation_id*np.ones((n_choices,))) 
+                
+                # 'i' is the "index" of the observation, or the reason why we know which observation is which
+                for neighbor_i in range(len(neighbors)):
+                    
+                    neighbor = neighbors[neighbor_i]
+                    
                     
                     neighbors_of_neighbor = list(G.neighbors(neighbor))
-
                     neighbor_of_neighbor = neighbors_of_neighbor[0]
+                    
+                    
                     neighbors_of_neighbor_of_neighbor = list(G.neighbors(neighbor_of_neighbor))
 
-
-                    if (neighbor_of_neighbor and neighbors_of_neighbor_of_neighbor):
-
-                        has_segment_attribute_dict = find_attribute_dict(G, neighbor, neighbor_of_neighbor, end_node, segment_features)
-                        
-                        has_intersection_attribute_dict = find_attribute_dict(G, neighbor_of_neighbor, neighbors_of_neighbor_of_neighbor[0], end_node, intersection_features)
-
-                    data_present = (has_segment_attribute_dict and has_intersection_attribute_dict)
-                    
-                    if not (data_present and (has_segment_attribute_dict["type"] == "segment") and (has_intersection_attribute_dict["type"] == "intersection")):
-                        good_attributes = False
+                    if not neighbors_of_neighbor_of_neighbor:
                         break
-
-
-                # attempting to add to the intersections dataframe ONLY if # choices > 1 and there's data in the attributes section
-                if ((n_choices > 1) and (good_attributes)):
                     
-                    observation_ids.append(observation_id*np.ones((n_choices,))) 
-                    
-                    # 'i' is the "index" of the observation, or the reason why we know which observation is which
-                    for neighbor_i in range(len(neighbors)):
-                        
-                        neighbor = neighbors[neighbor_i]
-                        
-                        
-                        neighbors_of_neighbor = list(G.neighbors(neighbor))
-                        neighbor_of_neighbor = neighbors_of_neighbor[0]
-                        
-                        
-                        neighbors_of_neighbor_of_neighbor = list(G.neighbors(neighbor_of_neighbor))
+                    current_intersection_data = find_attribute_dict(G, neighbor_of_neighbor, neighbors_of_neighbor_of_neighbor[0], end_node, intersection_features)
+                    current_segment_data = find_attribute_dict(G, neighbor, neighbor_of_neighbor, end_node, segment_features)
 
-                        if not neighbors_of_neighbor_of_neighbor:
-                            break
-                        
-                        print("current_node: ", current_node)
-                        print("current node's neighbor ", neighbor)
-                        print("current node's neighbor's neighbors: ", neighbors_of_neighbor_of_neighbor)
-                        print("EdgeID: ", (neighbor_of_neighbor, neighbors_of_neighbor_of_neighbor[0]))
-                        current_intersection_data = find_attribute_dict(G, neighbor_of_neighbor, neighbors_of_neighbor_of_neighbor[0], end_node, intersection_features)
-
-                        for j in neighbors_of_neighbor_of_neighbor:
-                            print(G.edges[neighbor_of_neighbor, j])
+                    for j in neighbors_of_neighbor_of_neighbor:
+                        print(G.edges[neighbor_of_neighbor, j])
 
 
-                        # collect all the observations for all neighbors
-                        current_observation_choice_features = []
+                    # collect all the observations for all neighbors
+                    current_intersection_choice_features = []
+                    current_segment_choice_features      = []
 
-                        # iteratively adding each feature value to the observation
-                        for feature in intersection_features:
-                            feature_value = current_intersection_data[feature] 
-                            current_observation_choice_features.append(feature_value)
+                    # iteratively adding each intersection value to the observation
+                    for feature in intersection_features:
+                        feature_value = current_intersection_data[feature] 
+                        current_intersection_choice_features.append(feature_value)
 
-                        # append each possibility's features to the dataframe
-                        choice_features_intersections.append(current_observation_choice_features)
+                    # iteratively adding each segment value to the observation
+                    for feature in segment_features:
+                        feature_value = current_segment_data[feature] 
+                        current_segment_choice_features.append(feature_value)
 
-                    # marking the choiceID's choice as '1' among zeros
-                    choice_indicators.append(np.zeros((n_choices,)))
-                    print("NEIGHBORS:", neighbors, "path:", path, "i+1:", i+1)
-                    chosen = neighbors.index(path[i+1])
-                    choice_indicators[-1][chosen] = 1
-                    
-                    # All the possible choices out at this observation:
-                    choice_ids.append(np.arange(n_choices))
-                    observation_id += 1
-        else:
-            print('Path # ' + str(path_index) + ' is not possible in the MIRE graph')
-    
+                    # append each possibility's features to the dataframe
+                    choice_features_intersections.append(current_intersection_choice_features)
+                    choice_features_segments.append(current_segment_choice_features)
+
+                # marking the choiceID's choice as '1' among zeros
+                choice_indicators.append(np.zeros((n_choices,)))
+                chosen = neighbors.index(path[i+1])
+                choice_indicators[-1][chosen] = 1
+                
+                # All the possible choices out at this observation:
+                choice_ids.append(np.arange(n_choices))
+                observation_id += 1
+
     # preparing columns for the dataframe (long) format
     overall_observation_ids                 = np.concatenate(observation_ids) # should have the same # of observations for both datasets...
     choice_features_overall_intersections   = np.vstack(choice_features_intersections) # different choice features for all
+    choice_features_overall_segments        = np.vstack(choice_features_segments)
     overall_choice_indicators               = np.concatenate(choice_indicators) # same choice indicators for both...
     overall_choice_ids                      = np.concatenate(choice_ids) # should be same because it's alt_id, or assigning IDs to 
 
@@ -138,10 +116,24 @@ def create_dataframes(G: nx.DiGraph, paths: list, featurelists: tuple):
     df_intersections['obs_ids'] = overall_observation_ids
     df_intersections['choices'] = overall_choice_indicators
     df_intersections['alt_ids'] = overall_choice_ids
+
+
+
+
+    df_segments['obs_ids'] = overall_observation_ids
+    df_segments['choices'] = overall_choice_indicators
+    df_segments['alt_ids'] = overall_choice_ids
+
     
     for i in range(n_intersection_feats):
         spec = intersection_features[i]
         df_intersections[spec] = choice_features_overall_intersections[:,i]
+
+    
+    for i in range(n_segment_feats):
+        spec = segment_features[i]
+        df_segments[spec] = choice_features_overall_segments[:,i]
+
 
     return (df_intersections, df_segments)
 
@@ -242,31 +234,17 @@ if __name__ == "__main__":
     kd = KDTreeWrapper(G.init_graph)
 
 
-    # generate paths (replace with map-matching paths later)
-    # res = []
-    # for i in range(1):
-    #     start = choice(nodes)
-    #     end = choice(nodes)
-    #     try:
-    #         path = nx.shortest_path(G, start, end)
-    #         res.append(path)
-
-    #     except nx.exception.NetworkXNoPath as e:
-    #         print(e)
-    # print("res: ", res)
-
 
     matched_pickle_paths = []
 
     import os
     import pickle
 
-    PATH = "Z:\\SCOPE_Teams_2018-19\\Volpe_Santos\\data\\ddot\\processed\\"
+    PATH = "/run/user/1000/gvfs/smb-share:server=fsvs01,share=scope/SCOPE_Teams_2018-19/Volpe_Santos/data/ddot/processed/"
 
     data_files = os.listdir(PATH)
 
-    os.chdir("Z:\\")
-
+    os.chdir(PATH)
 
     node_sum = 0
     num_nodes = 0
@@ -281,14 +259,13 @@ if __name__ == "__main__":
                 with open(str(filename), "rb") as fp:
 
                     tmp = pickle.load(fp)
-                    # print(tmp[0])
+
                     tmp = [[(tup[1],tup[0]) for tup in route[3]] for route in tmp]
 
-                    # print(tmp[0])
 
                     result = match_paths(tmp, kd, G)
 
-                    # print(result)
+                    print(result)
 
                     node_sum += len(result)
                     num_nodes += 1
@@ -299,7 +276,6 @@ if __name__ == "__main__":
                 print(3, ex, filename)
                 continue
 
-    # print(matched_pickle_paths[0])
 
     res = []
 
@@ -313,18 +289,16 @@ if __name__ == "__main__":
 
     # approach: keep all the variables in here for now, then remove the ones that are linearly dependent
     featurelist_intersections = ['distance_efficiency','stops', 'signal'] 
-    featurelist_segments = ['distance_efficiency', 'RoadType', 'Directionality', 'Shape_Length']
 
-    (df_intersections, _) = create_dataframes(G.DiGraph, res, (featurelist_intersections, featurelist_segments))
-    print("dataframe:\n", df_intersections[:20])
+    featurelist_segments = ['distance_efficiency', 'RoadType', 'Shape_Length']
 
+    (df_intersections, df_segments) = create_dataframes(G.DiGraph, res, (featurelist_intersections, featurelist_segments))
 
 
     fit_summary_intersections, summary_dict_intersections = create_model(df_intersections, featurelist_intersections)
-    
-    import pprint
-    pprint.pprint(fit_summary_intersections)
-    pprint.pprint(summary_dict_intersections)
-    print(sort_input_attributes(summary_dict_intersections))
+
+
+    fit_summary_segments, summary_dict_segments = create_model(df_segments, featurelist_segments)
+
 
     
