@@ -11,8 +11,8 @@ import logging
 
 logging.basicConfig(level=logging.INFO,
                     filename='matching.log',
-                    filemode='w',
-                    format='%(asctime)s - %(levelname)s - %(message)s',
+                    filemode='w+',
+                    format='%(asctime)s - %(levelname)s - %(funcName)s - %(message)s',
                     datefmt='%d-%b-%y %H:%M:%S')
 
 
@@ -58,6 +58,32 @@ def match_trace(trace, kd, G):
         logging.info(e)
 
 
+
+
+def match_paths(paths, kd, G):
+    """match a list of gps paths to their osmnx node ids
+
+    Args:
+        paths(list): list of list of long/lat coordinates
+        kd(): kdtree object
+        G: osmnx graph object
+    Returns:
+        list of list of osmnx node ids
+    """
+    matched_paths = []
+    for raw_path in paths:
+        match = match_trace(raw_path, kd, G)
+        matched_paths.append(match)
+
+
+    expd_paths, failed_paths = G.init_paths_to_expd(
+        list(filter(None, matched_paths)), False)
+    if failed_paths:
+        raise Exception('Found ' + str(len(failed_paths)) + ' invalid path(s) during graph expansion')
+
+    return expd_paths
+
+
 def get_closest_osmnx_path(trace, kd, G):
     """Get the closest node for each coord in trace
 
@@ -77,25 +103,6 @@ def get_closest_osmnx_path(trace, kd, G):
     if len(path) < 1:
         raise Exception('All nodes missed')
     return path
-
-
-# def is_valid_path(osmnx_path, G):
-#     """Check if osmnx_path is valid.
-
-#     Args:
-#         osmnx_path (List[Tuple[float, float]]): a list of (lat, long)
-#             coordinates
-#         G: Graph object
-#     Returns:
-#         boolean: True if node ids are connected to form valid osmnx path,
-#             otherwise False
-#     """
-#     for i in range(0, len(osmnx_path)-1):
-#         curr = osmnx_path[i]
-#         nxt = osmnx_path[i+1]
-#         if not are_neighbors(curr, nxt, G):
-#             return False
-#     return True
 
 
 def connect_path(raw_path, G):
@@ -121,22 +128,6 @@ def connect_path(raw_path, G):
     if len(path) < 2:
         raise Exception('Path is too short to form a route')
     return path
-
-
-# def are_neighbors(base, target, G):
-#     """Check if target is a neighbor of base.
-
-#     Args:
-#         base (int): osmnx node id
-#         target (int): osmnx node id
-#         G: Graph object
-#     Returns:
-#         boolean
-#     """
-#     neighbors = set(G.neighbors(base))
-#     if target in neighbors:
-#         return True
-#     return False
 
 
 def make_best_guess(base, target, G):

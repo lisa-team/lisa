@@ -5,9 +5,16 @@ from data import StreetDataGenerator
 from collections import OrderedDict
 from nx_types import *
 from mire_check import *
-from ride_report_matching import *
 from calibrate_helper_functions import *
-    
+import logging
+
+logging.basicConfig(level=logging.INFO,
+                    filename='calibrate.log',
+                    filemode='w+',
+                    format='%(asctime)s - %(levelname)s - %(funcName)- %(message)s',
+                    datefmt='%d-%b-%y %H:%M:%S')
+
+
 def create_dataframes(G: nx.DiGraph, paths: list, featurelists: tuple):
     """Create the pandas dataframe that is compatible with pylogit
     
@@ -23,7 +30,6 @@ def create_dataframes(G: nx.DiGraph, paths: list, featurelists: tuple):
     (intersection_features, segment_features) = featurelists
 
 
-    # INTERSECTION features!!
     n_intersection_feats            = len(intersection_features)
     n_segment_feats                 = len(segment_features)
     choice_features_intersections   = []
@@ -38,7 +44,6 @@ def create_dataframes(G: nx.DiGraph, paths: list, featurelists: tuple):
         path = paths[path_index]
 
         for i in range(len(path)-1):
-            print("\n\n\n\n")
             current_node = path[i]
             end_node = path[-1]
             neighbors = list(G.neighbors(current_node))
@@ -68,9 +73,6 @@ def create_dataframes(G: nx.DiGraph, paths: list, featurelists: tuple):
                     
                     current_intersection_data = find_attribute_dict(G, neighbor_of_neighbor, neighbors_of_neighbor_of_neighbor[0], end_node, intersection_features)
                     current_segment_data = find_attribute_dict(G, neighbor, neighbor_of_neighbor, end_node, segment_features)
-
-                    for j in neighbors_of_neighbor_of_neighbor:
-                        print(G.edges[neighbor_of_neighbor, j])
 
 
                     # collect all the observations for all neighbors
@@ -113,7 +115,6 @@ def create_dataframes(G: nx.DiGraph, paths: list, featurelists: tuple):
     df_intersections['obs_ids'] = overall_observation_ids
     df_intersections['choices'] = overall_choice_indicators
     df_intersections['alt_ids'] = overall_choice_ids
-
 
 
     df_segments['obs_ids'] = overall_observation_ids
@@ -181,7 +182,6 @@ def create_model(dataframe: pd.DataFrame, feature_list: list):
     return fit_summary, summary
 
 
-# TODO: Combine sort_input_attributes with weights_to_lts
 def sort_input_attributes(summary_dict: dict):
     """Takes in the fitted model summary and picks the statistically significant input variables
 
@@ -193,99 +193,11 @@ def sort_input_attributes(summary_dict: dict):
     """
     weights = {}
 
-    # try to reject any variables not worth considering
     for attribute in summary_dict:
         std_error = summary_dict[attribute]['std_err']
         weight = summary_dict[attribute]['parameters']
         p_value = summary_dict[attribute]['p_values']
         
-        if (p_value < 0.10):
-            weights[attribute] = (weight, std_error)
+        # use the above attributes to pick the important attributes
     
     return weights
-
-def weights_to_lts(attribute_weights: dict):
-    """ 
-    
-    Args:
-        attribute_weights (dict): [description]
-    """
-
-    pass
-    
-
-
-if __name__ == "__main__":
-
-    gdb = "scratch_022819.gdb"
-    node_layer = 3
-    edge_layer = 2
-
-
-    G = get_expanded_graph_from_mire(gdb, node_layer, edge_layer)
-
-    kd = KDTreeWrapper(G.init_graph)
-
-
-    matched_pickle_paths = []
-
-    import os
-    import pickle
-
-    PATH = "/run/user/1000/gvfs/smb-share:server=fsvs01,share=scope/SCOPE_Teams_2018-19/Volpe_Santos/data/ddot/processed/"
-
-    data_files = os.listdir(PATH)
-
-    os.chdir(PATH)
-
-    node_sum = 0
-    num_nodes = 0
-
-    for data_file in data_files:
-        filename = PATH + data_file
-
-        if data_file.endswith(".csv"):
-            pass
-        elif data_file.endswith(".p"):
-            try:
-                with open(str(filename), "rb") as fp:
-
-                    tmp = pickle.load(fp)
-
-                    tmp = [[(tup[1],tup[0]) for tup in route[3]] for route in tmp]
-
-
-                    result = match_paths(tmp, kd, G)
-
-                    print(result)
-
-                    node_sum += len(result)
-                    num_nodes += 1
-
-                    matched_pickle_paths.append(result)
-
-            except Exception as ex:
-                print(3, ex, filename)
-                continue
-
-    res = []
-
-    for file_routes in matched_pickle_paths:
-        res.extend(file_routes)
-
-
-    print("AVERAGE EXPD PATH LENGTH:", node_sum/num_nodes)
-    print("FINAL NUMBER OF ROUTES ENTERING LOGIT:", len(res))
-
-
-    # approach: keep all the variables in here for now, then remove the ones that are linearly dependent
-    featurelist_intersections = ['distance_efficiency','stops', 'signal'] 
-    featurelist_segments = ['distance_efficiency', 'RoadType', 'Shape_Length']
-
-    (df_intersections, df_segments) = create_dataframes(G.DiGraph, res, (featurelist_intersections, featurelist_segments))
-
-    fit_summary_intersections, summary_dict_intersections = create_model(df_intersections, featurelist_intersections)
-
-    fit_summary_segments, summary_dict_segments = create_model(df_segments, featurelist_segments)
-
-    
