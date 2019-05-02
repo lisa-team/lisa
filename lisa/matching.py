@@ -1,9 +1,11 @@
 """ Functions used for map matching
 
-This module contains functions for matching long/lat coordinates to our graph
-representations. There are two main functions here, one for matching a single
+This module contains functions for matching long/lat coordinates to nx graph
+nodes. There are two main functions here, one for matching a single
 long/lat (for example a stop sign) to a node, and one for matching multiple
 coordinates to a path through the graph.
+
+
 """
 from closest_node import nearest_node
 import networkx as nx
@@ -22,13 +24,13 @@ class CoordinateMatchError(Exception):
 
 
 def match_single(coord, kd, t=0.0001):
-    """Match (long, lat) to closest osmnx graph node.
+    """Match a gps coordinate to the closest init_graph node
     Args:
         coord (Tuple[float, float]): the latitude and longitude to match
         kd (lisa.graph.KDWrapper): the kd tree built off init_graph
         t (float): tolerance in degrees
     Returns:
-        int: the closest osmnx node ID
+        int: the closest init_graph node id
     """
     closest_node, d = kd.query_min_dist_nodes(coord)
     if d > t:
@@ -38,16 +40,15 @@ def match_single(coord, kd, t=0.0001):
 
 
 def match_trace(trace, kd, G):
-    """Match a list of (long,lat) coordinates to the best match cycling route
-    in the nx graph
+    """Match a gps trace to its init_graph route
 
     Args:
         trace (List[Tuple[float, float]]): a list of (lat, long) points to
             match
-        kd: KDTreeWrapper object
-        G: Graph object
+        kd (lisa.graph.KDWrapper): the kd tree built off init_graph
+        G: init_graph object
     Returns:
-        list: the list of best match node IDs
+        match: list of best match init_graph node ids
     """
     try:
         osmnx_match = get_closest_osmnx_path(trace, kd, G)
@@ -59,14 +60,14 @@ def match_trace(trace, kd, G):
 
 
 def match_paths(paths, kd, G):
-    """match a list of gps paths to their nx node ids
+    """Match a list of gps traces to their DiGraph routes
 
     Args:
         paths(list): list of list of long/lat coordinates
-        kd(): kdtree object
-        G: nx graph object
+        kd (lisa.graph.KDWrapper): the kd tree built off init_graph
+        G: init_graph object
     Returns:
-        list of list of osmnx node ids
+        list of list of DiGraph node ids
     """
     matched_paths = []
     for raw_path in paths:
@@ -88,14 +89,14 @@ Helper functions
 
 
 def get_closest_osmnx_path(trace, kd, G):
-    """Get the closest node for each coord in trace
+    """Return a list of the closest node for each coord in trace
 
     Args:
         trace: a list of (lat, long) coordinates
-        kd: KDTreeWrapper object
-        G: Graph object
+        kd (lisa.graph.KDWrapper): the kd tree built off init_graph
+        G: init_graph object
     Returns:print
-        path(list): the list of nx node IDs
+        path: the list of init_graph node ids
     """
     path = []
     for coord in trace:
@@ -109,11 +110,11 @@ def get_closest_osmnx_path(trace, kd, G):
 
 
 def connect_path(nx_raw_path, G):
-    """Convert nx_raw_path to connected nx path.
+    """Connect the nodes in the nx_raw_path
 
     Args:
         nx_raw_path: a list of nx node ids
-        G: Graph object
+        G: init_graph object
     Returns:
         list of node ids
     """
@@ -133,14 +134,14 @@ def connect_path(nx_raw_path, G):
 
 
 def make_best_guess(base, target, G):
-    """Return shortest path between two nodes in an nx graph.
+    """Return shortest path between two nodes in the init_graph
 
     Args:
-        base (int): nx node id
-        target (int): nx node id
-        G: MultiDiGraph object
+        base: init_graph node id
+        target: init_graph node id
+        G: init_graph object
     Returns:
-        (List[int]): list of integer node ids
+        list of node ids
     """
     try:
         return nx.shortest_path(G, base, target)
