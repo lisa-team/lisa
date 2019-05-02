@@ -1,8 +1,6 @@
 from .context import lisa
-from lisa import closest_node, graph
+from lisa import closest_node, graph, mire_check
 import pytest
-import pickle
-# python -m pytest test_closest_node.py -v
 
 
 @pytest.fixture
@@ -10,8 +8,8 @@ def G():
     '''
     Returns osmnx graph of DC
     '''
-    pickle_in = open('dc.pickle', "rb")
-    return pickle.load(pickle_in)
+    return mire_check.get_expanded_graph_from_mire(
+        '../lisa/scratch_022819.gdb', 3, 2)
 
 
 @pytest.fixture
@@ -19,7 +17,7 @@ def kd(G):
     '''
     Returns kd tree
     '''
-    return graph.KDTreeWrapper(G.DiGraph)
+    return graph.KDTreeWrapper(G.init_graph)
 
 
 @pytest.mark.parametrize("P, Q, res", [
@@ -40,14 +38,3 @@ def test_generate_line(P, Q, res):
 ])
 def test_calculate_dist(coord, a, b, c, res):
     assert round(closest_node.calculate_dist(coord, a, b, c), 3) == res
-
-
-@pytest.mark.parametrize("coord", [
-    (38.91, 77.042),
-    (38.913, 77.039),
-    (38.915, 77.045),
-    (38.919, 77.031),
-])
-def test_nearest_node(coord, G, kd):
-    node, dist = closest_node.nearest_node(coord, kd, G.DiGraph)
-    assert dist < 100

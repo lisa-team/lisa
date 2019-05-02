@@ -21,7 +21,7 @@ class CoordinateMatchError(Exception):
     pass
 
 
-def match_single(coord, kd, t=0.00001):
+def match_single(coord, kd, t=0.0001):
     """Match (long, lat) to closest osmnx graph node.
     Args:
         coord (Tuple[float, float]): the latitude and longitude to match
@@ -39,7 +39,7 @@ def match_single(coord, kd, t=0.00001):
 
 def match_trace(trace, kd, G):
     """Match a list of (long,lat) coordinates to the best match cycling route
-    in the osmnx graph
+    in the nx graph
 
     Args:
         trace (List[Tuple[float, float]]): a list of (lat, long) points to
@@ -58,15 +58,13 @@ def match_trace(trace, kd, G):
         logging.info(e)
 
 
-
-
 def match_paths(paths, kd, G):
-    """match a list of gps paths to their osmnx node ids
+    """match a list of gps paths to their nx node ids
 
     Args:
         paths(list): list of list of long/lat coordinates
         kd(): kdtree object
-        G: osmnx graph object
+        G: nx graph object
     Returns:
         list of list of osmnx node ids
     """
@@ -75,13 +73,18 @@ def match_paths(paths, kd, G):
         match = match_trace(raw_path, kd, G)
         matched_paths.append(match)
 
-
     expd_paths, failed_paths = G.init_paths_to_expd(
         list(filter(None, matched_paths)), False)
     if failed_paths:
-        raise Exception('Found ' + str(len(failed_paths)) + ' invalid path(s) during graph expansion')
+        raise Exception('Found ' + str(len(failed_paths)) +
+                        ' invalid path(s) during graph expansion')
 
     return expd_paths
+
+
+"""
+Helper functions
+"""
 
 
 def get_closest_osmnx_path(trace, kd, G):
@@ -91,13 +94,13 @@ def get_closest_osmnx_path(trace, kd, G):
         trace: a list of (lat, long) coordinates
         kd: KDTreeWrapper object
         G: Graph object
-    Returns:
-        path(list): the list of osmnx node IDs
+    Returns:print
+        path(list): the list of nx node IDs
     """
     path = []
     for coord in trace:
         closest_node, d = nearest_node(coord, kd, G.init_graph)
-        if d > 0.00001:
+        if d > 0.001:
             continue
         path.append(closest_node)
     if len(path) < 1:
@@ -105,25 +108,24 @@ def get_closest_osmnx_path(trace, kd, G):
     return path
 
 
-def connect_path(raw_path, G):
-    """Convert raw_path to connected osmnx path.
+def connect_path(nx_raw_path, G):
+    """Convert nx_raw_path to connected nx path.
 
     Args:
-        raw_path (List[Tuple[float, float]]): a list of (lat, long)
-            coordinates
+        nx_raw_path: a list of nx node ids
         G: Graph object
     Returns:
-        (List[Tuple[float, float]]): the input list
+        list of node ids
     """
-    path = [raw_path[0]]
-    for i in range(0, len(raw_path)-1):
-        curr = raw_path[i]
-        nxt = raw_path[i+1]
+    path = [nx_raw_path[0]]
+    for i in range(0, len(nx_raw_path)-1):
+        curr = nx_raw_path[i]
+        nxt = nx_raw_path[i+1]
         if G.are_neighbors(curr, nxt):
             path.append(nxt)
         else:
             path += make_best_guess(curr, nxt, G.init_graph)[1:]
-    if len(path) > len(raw_path)*2:
+    if len(path) > len(nx_raw_path)*2:
         raise Exception('Path is too long to constitute valid route')
     if len(path) < 2:
         raise Exception('Path is too short to form a route')
@@ -131,11 +133,11 @@ def connect_path(raw_path, G):
 
 
 def make_best_guess(base, target, G):
-    """Return shortes path between two nodes in an osmnx graph.
+    """Return shortest path between two nodes in an nx graph.
 
     Args:
-        base (int): osmnx node id
-        target (int): osmnx node id
+        base (int): nx node id
+        target (int): nx node id
         G: MultiDiGraph object
     Returns:
         (List[int]): list of integer node ids
