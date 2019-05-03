@@ -23,8 +23,6 @@ for data_file in data_files:
     filename = PATH + data_file
 
     if data_file.endswith(".csv"):
-        pass
-
         
         # print(filename)
 
