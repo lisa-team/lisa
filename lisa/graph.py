@@ -10,20 +10,21 @@ from scipy.spatial import KDTree
 from expansion import create_dg, expand_graph, create_node_map
 from data import add_random_attributes
 from nx_types import NodeID
-
+import logging
 
 # For custom legends
 import matplotlib as mpl
 from matplotlib.lines import Line2D
 
 
+logging.basicConfig(level=logging.INFO,
+                    filename='matching.log',
+                    filemode='a',
+                    format='%(asctime)s - %(levelname)s - %(funcName)s- %(message)s',
+                    datefmt='%d-%b-%y %H:%M:%S')
+
 class Name(object):
-    """[summary]
-
-    Raises:
-        TypeError: [description]
-
-    TODO: Finish docstrings
+    """
     """
 
     def __init__(self, name: str):
@@ -311,7 +312,7 @@ class Graph(object):
                 path = self.remove_duplicate_nodes(path)
                 expd_paths.append(self.init_path_to_expd(path))
             except Exception as ex:
-                print("Could not convert path: " , ex, path)
+                logging.info(ex)
                 failed_paths.append(path)
 
         if only_success:
@@ -334,21 +335,16 @@ class Graph(object):
         for i in range(len(path)-1):
             n1, n2 = path[i], path[i+1]
             expd_path.append((n1,n2,'out'))
-            # expd_path.append((n1,n2,'in'))
             expd_path.append((n2,n1,'in'))
         
         # convert expanded node to integer form
         expd_path = [self._expd_node_to_int[node] for node in expd_path]
-
-        print("INIT PATH:", path)
-        print("EXPD PATH:", expd_path)
 
         if self.is_valid_expd_path(expd_path):
 
             return expd_path
 
         else:
-            # print(expd_path)
             raise Exception("init_path_to_expd: Path is invalid")
 
 
@@ -608,7 +604,7 @@ class Graph_Hover(object):
                     cont, ind = child.contains(event)
                     if cont:
                         arr = ind["ind"]
-                        # print(arr[0])
+                        
                         # super sketchy, but apparently self.mdg.nodes names the nodes the same way pyplot reads them
                         text = self.mdg.nodes(data=True)[arr[0]]
 
@@ -642,73 +638,3 @@ class Graph_Hover(object):
 
     def save_fig(self, filename):
         plt.savefig(filename+'.png')
-
-if __name__ == "__main__":
-
-
-    test = nx.DiGraph()
-    test.add_nodes_from([1,2,3])
-    test.add_edges_from([(1,2, {1:2}), (2,3), (3,1)])
-
-    # print(test.nodes())
-    # print(test.edges())
-
-    # print(test.edges()[1,2])
-
-    print([k for k in nx.strongly_connected_components(test)])
-
-
-
-
-    bbox = Bbox(38.883_000_16, 38.878_726_840_000_006, -77.099_398_32, -77.105_007_68)
-    # bbox = Name("Washington, DC")
-    # bbox = Bbox(38.898191, 38.894810, -77.003528, -77.010062)
-    G = Graph(bbox)
-    print(f"First 100 nodes: {list(G.DiGraph.nodes)[:100]}\n")
-    print(f"First 100 edges: {list(G.DiGraph.edges)[:100]}\n")
-
-    # init_graph_node = list(G.init_graph.nodes)[30]  # pink node
-    # expanded_nodes = G.node_map[init_graph_node]  # yellow nodes
-    # print(f"Pink node: {init_graph_node} -> Yellow nodes: {expanded_nodes}\n")
-
-    def edge_filter(data):
-        if data.get("separate_path"):
-            return 'r'
-        elif data.get("crosswalk"):
-            return 'm'
-        elif data.get("bike_lane"):
-            return 'g'
-        else:
-            return "#1F1F1F"
-
-    def node_filter(data):
-        if data.get("x") > -77.101:
-            return 'b'
-        else:
-            return "#1F1F1F"
-
-    edge_legend = {"Separate path": 'r', "Has crosswalk": 'm', "Has bike lane": 'g'}
-    node_legend = {"x > -77.01": 'b', "x <= -77.01": '#1F1F1F'}
-
-    edge_and_nodes = G.create_legend(edge_legend=edge_legend, node_legend=node_legend)
-    only_nodes = G.create_legend(edge_legend=None, node_legend=node_legend)
-
-    # fig, ax1 = G.highlight_graph(edge_filter_function=edge_filter,
-    #                              node_filter_function=node_filter, legend_elements=edge_and_nodes, title="Test title")
-
-
-    # hover = Graph_Hover(graph=G, fig=fig, ax=ax1)
-    # hover.save_fig("test")
-    # hover.display_graph()
-
-    # G.plot_simple_graph()
-    # fig, ax2 = G.highlight_graph(edge_filter_function=None, node_filter_function=None, legend_elements=None, title = "")
-    # ax2.add_scatter([-77.102, -77.103], [38.88, 38.881], 'b')
-
-
-    # plt.show()
-
-    # hover = Graph_Hover(graph=G, fig=fig, ax=ax2)
-    # hover.add_scatter(x_s=[-77.102, -77.103], y_s=[38.88, 38.881], color='b')
-    # hover.save_fig("E St and North Capitol St (1)")
-    # hover.display_graph()

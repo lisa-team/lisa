@@ -5,6 +5,14 @@ from graph import *
 from random import random, randrange, choice
 import math
 import pprint
+import logging
+
+logging.basicConfig(level=logging.INFO,
+                    filename='calibrate.log',
+                    filemode='a',
+                    format='%(asctime)s - %(levelname)s - %(funcName)s - %(message)s',
+                    datefmt='%d-%b-%y %H:%M:%S')
+
 
 def calc_distance_efficiency(G: nx.DiGraph, edgenode1: NodeID, edgenode2: NodeID, endnode: NodeID):
     """Takes in an edge and the endpoint to calculate how well the edge choice leads to the endpoint
@@ -53,11 +61,6 @@ def find_attribute_dict(G: nx.DiGraph, node1: NodeID, node2: NodeID, endnode: No
     edgeID              = (node1, node2)
     current_edge_data   = dict(G.edges[edgeID])
     attributes          = {}
-
-    if not current_edge_data:
-        print("NO EDGE DATA FOR ATTR DICT")
-    else:
-        print("CURRENT_EDGE_DATA", current_edge_data)
     
     try:
         for feature in featurelist:
@@ -76,31 +79,9 @@ def find_attribute_dict(G: nx.DiGraph, node1: NodeID, node2: NodeID, endnode: No
         return attributes
 
     except Exception as ex:
-        print("EXCEPTION:", ex)
+        logging.info(ex)
         return
 
-
-
-def check_path_validity(G: nx.DiGraph, path):
-    """Takes in a list of nodes and loops through each one to see if it is valid. 
-
-    
-    Args:
-        path ([nx.nodeID]): List of Node IDs needed 
-    """
-    for node_index in range(len(path)-1):
-        current_node = path[node_index]
-        next_node = path[node_index + 1]
-
-        print("CURRENT NODE TYPE:", type(current_node))
-        
-        current_node_neighbors = set(G.neighbors(current_node))
-        if next_node not in current_node_neighbors:
-            print("node_index: ", node_index)
-            print(current_node, next_node, current_node_neighbors)
-            return False
-
-    return True
 
 def check_for_data(G, current_node, neighbors, end_node, segment_features, intersection_features):
     good_attributes = True
