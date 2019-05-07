@@ -101,7 +101,7 @@ def get_closest_osmnx_path(trace, kd, G):
     path = []
     for coord in trace:
         closest_node, d = nearest_node(coord, kd, G.init_graph)
-        if d > 0.001:
+        if d > 0.00001:
             continue
         path.append(closest_node)
     if len(path) < 1:
