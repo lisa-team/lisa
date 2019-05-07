@@ -23,7 +23,7 @@ class CoordinateMatchError(Exception):
     pass
 
 
-def match_single(coord, kd, t=0.0001):
+def match_single(coord, kd, t=0.00001):
     """Match a gps coordinate to the closest init_graph node
     Args:
         coord (Tuple[float, float]): the latitude and longitude to match
@@ -101,7 +101,7 @@ def get_closest_osmnx_path(trace, kd, G):
     path = []
     for coord in trace:
         closest_node, d = nearest_node(coord, kd, G.init_graph)
-        if d > 0.001:
+        if d > 0.00001:
             continue
         path.append(closest_node)
     if len(path) < 1:

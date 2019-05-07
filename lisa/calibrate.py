@@ -29,7 +29,6 @@ def create_dataframes(G: nx.DiGraph, paths: list, featurelists: tuple):
 
     (intersection_features, segment_features) = featurelists
 
-
     n_intersection_feats            = len(intersection_features)
     n_segment_feats                 = len(segment_features)
     choice_features_intersections   = []
@@ -61,7 +60,6 @@ def create_dataframes(G: nx.DiGraph, paths: list, featurelists: tuple):
                     
                     neighbor = neighbors[neighbor_i]
                     
-                    
                     neighbors_of_neighbor = list(G.neighbors(neighbor))
                     neighbor_of_neighbor = neighbors_of_neighbor[0]
                     
@@ -71,9 +69,12 @@ def create_dataframes(G: nx.DiGraph, paths: list, featurelists: tuple):
                     if not neighbors_of_neighbor_of_neighbor:
                         break
                     
-                    current_intersection_data = find_attribute_dict(G, neighbor_of_neighbor, neighbors_of_neighbor_of_neighbor[0], end_node, intersection_features)
                     current_segment_data = find_attribute_dict(G, neighbor, neighbor_of_neighbor, end_node, segment_features)
-
+                    
+                    # # if all the choices within the intersection are the same, then use this line:
+                    current_intersection_data = find_attribute_dict(G, neighbor_of_neighbor, neighbors_of_neighbor_of_neighbor[0], end_node, intersection_features)
+                    # # if the choices within the intersection aren't the same, then comment the line above and use this one instead
+                    # current_intersection_data = find_attribute_dict(G, current, neighbor, end_node, intersection_features)
 
                     # collect all the observations for all neighbors
                     current_intersection_choice_features = []
@@ -101,13 +102,13 @@ def create_dataframes(G: nx.DiGraph, paths: list, featurelists: tuple):
                 # All the possible choices out at this observation:
                 choice_ids.append(np.arange(n_choices))
                 observation_id += 1
-
+                
     # preparing columns for the dataframe (long) format
-    overall_observation_ids                 = np.concatenate(observation_ids) # should have the same # of observations for both datasets...
-    choice_features_overall_intersections   = np.vstack(choice_features_intersections) # different choice features for all
+    overall_observation_ids                 = np.concatenate(observation_ids)
+    choice_features_overall_intersections   = np.vstack(choice_features_intersections)
     choice_features_overall_segments        = np.vstack(choice_features_segments)
-    overall_choice_indicators               = np.concatenate(choice_indicators) # same choice indicators for both...
-    overall_choice_ids                      = np.concatenate(choice_ids) # should be same because it's alt_id, or assigning IDs to 
+    overall_choice_indicators               = np.concatenate(choice_indicators) 
+    overall_choice_ids                      = np.concatenate(choice_ids)
 
     df_intersections    = pd.DataFrame()
     df_segments         = pd.DataFrame()

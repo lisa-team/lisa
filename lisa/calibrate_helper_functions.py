@@ -71,10 +71,8 @@ def find_attribute_dict(G: nx.DiGraph, node1: NodeID, node2: NodeID, endnode: No
                 feature_value = current_edge_data['attributes'][feature]
             attributes[feature] = feature_value
 
-        
         assert (len(attributes) == len(featurelist)), "attributes length: " + str(len(attributes)) + " featurelist length: " + str(len(featurelist))
         attributes["type"] = current_edge_data["type"]
-
 
         return attributes
 
@@ -83,7 +81,22 @@ def find_attribute_dict(G: nx.DiGraph, node1: NodeID, node2: NodeID, endnode: No
         return
 
 
-def check_for_data(G, current_node, neighbors, end_node, segment_features, intersection_features):
+def check_for_data(G: nx.DiGraph, current_node: NodeID, neighbors: list, end_node: NodeID, segment_features: list, intersection_features: list):
+    """Takes in an intersection in a path and checks whether the segment and intersection choices have data
+        Returns False if some of the data is not there, so that calibrate.create_dataframes() doesn't include this choice
+    
+    
+    Args:
+        G (nx.DiGraph): Graph representation of City of hand
+        current_node (NodeID): Node identifier for the choice at hand
+        neighbors (list): Neighbors of the current node
+        end_node (NodeID): Last node in the path for the choice at hand
+        segment_features (list): List of strings describing what segment attributes to look for
+        intersection_features (list): List of strings describing what intersection attributes to look for
+    
+    Returns:
+        boolean: whether there is correct and enough data to use in the calibration stage
+    """
     good_attributes = True
 
     has_segment_attribute_dict      = None 
@@ -97,15 +110,22 @@ def check_for_data(G, current_node, neighbors, end_node, segment_features, inter
         neighbor_of_neighbor = neighbors_of_neighbor[0]
         neighbors_of_neighbor_of_neighbor = list(G.neighbors(neighbor_of_neighbor))
 
-
+        # if the nodes are present, define variables that check for data availability
         if (neighbor_of_neighbor and neighbors_of_neighbor_of_neighbor):
 
             has_segment_attribute_dict = find_attribute_dict(G, neighbor, neighbor_of_neighbor, end_node, segment_features)
             
+            # # if all the choices within the intersection are the same, then use this line
             has_intersection_attribute_dict = find_attribute_dict(G, neighbor_of_neighbor, neighbors_of_neighbor_of_neighbor[0], end_node, intersection_features)
+            # # if the choices within the intersection aren't the same, then use this line instead (and comment the line above):
+            # has_intersection_attribute_dict = find_attribute_dict(G, current, neighbor, end_node, intersection_features)
 
+
+        # overall boolean that indicates whether there are segment AND intersection attributes
         data_present = (has_segment_attribute_dict and has_intersection_attribute_dict)
         
+        # In addition to checking if the data is present, it makes sure that 
+        # the segments are segments and the intersections are intersections
         if not (data_present and (has_segment_attribute_dict["type"] == "segment") and (has_intersection_attribute_dict["type"] == "intersection")):
             good_attributes = False
             break
