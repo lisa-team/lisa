@@ -7,6 +7,7 @@ import sys
 import os
 import pickle
 import pprint
+import stream_routes_from_csv as stream_routes
 
 """ This script runs through all of the processes: infrastructure graph expansion, route-matching, and input calibration
     To run this script you need 2 command line arguments: the path to the MIRE data (a .gdb file) and the path to processed bikeshare routes directory
@@ -64,6 +65,9 @@ import pprint
 
 if __name__ == "__main__":
     gdb = sys.argv[1]
+    PATH = sys.argv[2]
+
+
     node_layer = 3
     edge_layer = 2
 
@@ -71,61 +75,81 @@ if __name__ == "__main__":
     G = mire_check.get_expanded_graph_from_mire(gdb, node_layer, edge_layer)
 
     kd = graph.KDTreeWrapper(G.init_graph)
-
-
-    matched_pickle_paths = []
-
     
-    PATH = sys.argv[2]
+    
 
     data_files = os.listdir(PATH)
-
     os.chdir(PATH)
 
-    node_sum = 0
-    num_nodes = 0
+    # node_sum = 0
+    # num_nodes = 0
+
+    paths_from_csvs = []
 
     # Match the GPS coordinates to graph nodes 
     for data_file in data_files:
-        filename = PATH + data_file
 
         if data_file.endswith(".csv"):
-            pass
-        elif data_file.endswith(".p"):
-            try:
-                with open(str(filename), "rb") as fp:
 
-                    tmp = pickle.load(fp)
+            filename = PATH + data_file
 
-                    tmp = [[(tup[1],tup[0]) for tup in route[3]] for route in tmp]
+            routes_lat_long = stream_routes.get_routes_from_single_csv(filename, debug = True)
+
+            if routes_lat_long:
+
+                routes_long_lat = [[(tup[1],tup[0]) for tup in route] for route in routes_lat_long]
+
+                paths_from_csv = matching.match_paths(routes_long_lat, kd, G)
+
+                # paths_from_csv is a list of paths from a single csv. Each path is a list of integers which correspond to node IDs in our traffic graph.
+
+                paths_from_csvs.extend(paths_from_csv)
+
+            else:
+
+                print("No routes from", filename)
 
 
-                    result = matching.match_paths(tmp, kd, G)
+        # elif data_file.endswith(".p"):
+        #     try:
+        #         with open(str(filename), "rb") as fp:
 
-                    print(result)
+        #             tmp = pickle.load(fp)
 
-                    node_sum += len(result)
-                    num_nodes += 1
+        #             tmp = [[(tup[1],tup[0]) for tup in route[3]] for route in tmp]
 
-                    matched_pickle_paths.append(result)
 
-            except Exception as ex:
-                print(3, ex, filename)
-                continue
+        #             result = matching.match_paths(tmp, kd, G)
 
-    res = []
-    for file_routes in matched_pickle_paths:
-        res.extend(file_routes)
+        #             print(result)
+
+        #             node_sum += len(result)
+        #             num_nodes += 1
+
+        #             matched_paths.append(result)
+
+        #     except Exception as ex:
+        #         print(3, ex, filename)
+        #         continue
+
+    res = paths_from_csvs#[]
+    # for file_routes in matched_paths:
+    #     res.extend(file_routes)
         
     print("res:\n", res)
-    featurelist_intersections = ['distance_efficiency','stops', 'signal'] 
-    featurelist_segments = ['distance_efficiency', 'RoadType', 'Shape_Length']
 
-    (df_intersections, df_segments) = calibrate.create_dataframes(G.DiGraph, res, (featurelist_intersections, featurelist_segments))
+    if res:
+        featurelist_intersections = ['distance_efficiency','stops', 'signal'] 
+        featurelist_segments = ['distance_efficiency', 'RoadType', 'Shape_Length']
 
-    fit_summary_intersections, summary_dict_intersections = calibrate.create_model(df_intersections, featurelist_intersections)
+        (df_intersections, df_segments) = calibrate.create_dataframes(G.DiGraph, res, (featurelist_intersections, featurelist_segments))
 
-    fit_summary_segments, summary_dict_segments = calibrate.create_model(df_segments, featurelist_segments)
+        fit_summary_intersections, summary_dict_intersections = calibrate.create_model(df_intersections, featurelist_intersections)
 
-    pprint.pprint(summary_dict_intersections)
-    pprint.pprint(summary_dict_segments)
+        fit_summary_segments, summary_dict_segments = calibrate.create_model(df_segments, featurelist_segments)
+
+        pprint.pprint(summary_dict_intersections)
+        pprint.pprint(summary_dict_segments)
+
+    else:
+        print("No data at all")
