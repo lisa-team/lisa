@@ -114,10 +114,10 @@ if __name__ == "__main__":
                 continue
 
     res = []
-
     for file_routes in matched_pickle_paths:
         res.extend(file_routes)
-
+        
+    print("res:\n", res)
     featurelist_intersections = ['distance_efficiency','stops', 'signal'] 
     featurelist_segments = ['distance_efficiency', 'RoadType', 'Shape_Length']
 
