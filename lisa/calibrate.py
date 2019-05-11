@@ -70,6 +70,7 @@ def create_dataframes(G: nx.DiGraph, paths: list, featurelists: tuple):
                     neighbors_of_neighbor_of_neighbor = list(G.neighbors(neighbor_of_neighbor))
 
                     if not neighbors_of_neighbor_of_neighbor:
+                        print("asdf")
                         break
                     
                     current_intersection_data = find_attribute_dict(G, neighbor_of_neighbor, neighbors_of_neighbor_of_neighbor[0], end_node, intersection_features)
