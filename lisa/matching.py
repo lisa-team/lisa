@@ -77,7 +77,7 @@ def match_paths(paths, kd, G):
     expd_paths, failed_paths = G.init_paths_to_expd(
         list(filter(None, matched_paths)), False)
     if failed_paths:
-        raise Exception('Found ' + str(len(failed_paths)) +
+        logging.info('Found ' + str(len(failed_paths)) +
                         ' invalid path(s) during graph expansion')
 
     return expd_paths
@@ -101,7 +101,7 @@ def get_closest_osmnx_path(trace, kd, G):
     path = []
     for coord in trace:
         closest_node, d = nearest_node(coord, kd, G.init_graph)
-        if d > 0.001:
+        if d > 0.00001:
             continue
         path.append(closest_node)
     if len(path) < 1:

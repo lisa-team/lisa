@@ -53,6 +53,7 @@ def create_dataframes(G: nx.DiGraph, paths: list, featurelists: tuple):
 
             # attempting to add to the intersections dataframe ONLY if # choices > 1 and there's data in the attributes section
             if ((n_choices > 1) and (good_attributes)):
+                # print("passed")
                 
                 observation_ids.append(observation_id*np.ones((n_choices,))) 
                 
@@ -69,6 +70,7 @@ def create_dataframes(G: nx.DiGraph, paths: list, featurelists: tuple):
                     neighbors_of_neighbor_of_neighbor = list(G.neighbors(neighbor_of_neighbor))
 
                     if not neighbors_of_neighbor_of_neighbor:
+                        print("asdf")
                         break
                     
                     current_intersection_data = find_attribute_dict(G, neighbor_of_neighbor, neighbors_of_neighbor_of_neighbor[0], end_node, intersection_features)
@@ -102,6 +104,10 @@ def create_dataframes(G: nx.DiGraph, paths: list, featurelists: tuple):
                 choice_ids.append(np.arange(n_choices))
                 observation_id += 1
 
+            else:
+                # print("failed")
+                pass
+
     # preparing columns for the dataframe (long) format
     overall_observation_ids                 = np.concatenate(observation_ids) # should have the same # of observations for both datasets...
     choice_features_overall_intersections   = np.vstack(choice_features_intersections) # different choice features for all
@@ -121,13 +127,25 @@ def create_dataframes(G: nx.DiGraph, paths: list, featurelists: tuple):
     df_segments['choices'] = overall_choice_indicators
     df_segments['alt_ids'] = overall_choice_ids
     
-    for i in range(n_intersection_feats):
-        spec = intersection_features[i]
-        df_intersections[spec] = choice_features_overall_intersections[:,i]
+    # print(df_intersections[:10])
+
+    print(df_intersections.shape)
+    print(choice_features_overall_intersections.shape)
+
+    # print(df_segments[:10])
+
+    # print("choice_features_overall_intersections:", choice_features_overall_intersections)
+    print(choice_features_overall_intersections[:,0])
+
+    # print("choice_features_overall_segments:" ,choice_features_overall_segments)
+
+    for j in range(n_intersection_feats):
+        spec = intersection_features[j]
+        df_intersections[spec] = choice_features_overall_intersections[:,j]
     
-    for i in range(n_segment_feats):
-        spec = segment_features[i]
-        df_segments[spec] = choice_features_overall_segments[:,i]
+    for k in range(n_segment_feats):
+        spec = segment_features[k]
+        df_segments[spec] = choice_features_overall_segments[:,k]
 
     return (df_intersections, df_segments)
 
