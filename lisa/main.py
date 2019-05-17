@@ -91,7 +91,8 @@ def create_graph_and_kd_tree(gdb, node_layer, edge_layer, out_dir, save_or_load 
 
 
 
-
+#TODO: If the total size of gps data csvs is too large, the program will fail from MemoryError. Might require rewrite to pickle/save intermediate results.
+# paths_from_csvs/res should be the first intermediate result, followed by df_intersections and df_segments.
 if __name__ == "__main__":
     gdb = sys.argv[1]
     PATH = sys.argv[2] # path to csvs containing gps data

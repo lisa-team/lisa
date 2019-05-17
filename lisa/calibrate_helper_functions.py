@@ -93,15 +93,16 @@ def check_for_data(G, current_node, neighbors, end_node, segment_features, inter
         # check if there are attributes in neighboring segments and neighboring intersections:
         for neighbor in neighbors:
 
+
             neighbors_of_neighbor = list(G.neighbors(neighbor))
 
             if not neighbors_of_neighbor:
                 continue
 
-
             neighbor_of_neighbor = neighbors_of_neighbor[0]  
             neighbors_of_neighbor_of_neighbor = list(G.neighbors(neighbor_of_neighbor))
             # print("neighbors_of_neighbor_of_neighbor", neighbors_of_neighbor_of_neighbor)
+
 
             if (neighbor_of_neighbor and neighbors_of_neighbor_of_neighbor):
 
