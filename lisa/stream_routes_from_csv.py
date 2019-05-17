@@ -43,21 +43,24 @@ def get_routes_from_single_csv(filename, debug = False):
                 lats and longs are a giant string with each x or y coordinate separated by commas.
                 """
                 # Print each row
+                count+=1
 
-                if count < 20:
-                    try:
-                        row[3] = list(zip([float(k) for k in row[3].split(',')], [float(k) for k in row[4].split(',')]))
+                
+                try:
+                    row[3] = list(zip([float(k) for k in row[3].split(',')], [float(k) for k in row[4].split(',')]))
 
-                        routes.append(row[3])
+                    routes.append(row[3])
 
-                    except Exception as ex:
-                        print("Get_routes_from_single_csv error 1:", ex, filename)
-                        continue
+                except Exception as ex:
+                    print("Get_routes_from_single_csv error 1:", ex, filename)
+                    continue
 
-                    if debug:
-                        count+=1
-                else:
-                    break
+                if debug:
+                    
+                    print(count)    
+                
+                    if count > 20:
+                        break
 
     except Exception as ex:
         print("Get_routes_from_single_csv error 2:", ex, filename)

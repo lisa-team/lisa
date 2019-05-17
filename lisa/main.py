@@ -63,26 +63,55 @@ import stream_routes_from_csv as stream_routes
     If you want to add attributes to your analysis, you can add categories to featurelist_intersections and featurelist_segments if the category's attribute is already in the infrastructure graph
 """
 
+
+def create_graph_and_kd_tree(gdb, node_layer, edge_layer, out_dir, save_or_load = "save", graph_name = "traffic_graph.pickle", kd_name = "kd_tree.pickle"):
+    G = None
+    kd = None
+
+    if save_or_load == "save":
+
+        G = mire_check.get_expanded_graph_from_mire(gdb, node_layer, edge_layer)
+        kd = graph.KDTreeWrapper(G.init_graph)
+
+        with open(graph_name, "wb+") as g_n:
+            pickle.dump(G, g_n)
+
+        with open(kd_name, "wb+") as k_n:
+            pickle.dump(kd, k_n)
+
+    elif save_or_load == "load":
+
+        with open(graph_name, "rb") as g_n1:
+            G = pickle.load(g_n1)
+
+        with open(kd_name, "rb") as k_n1:
+            kd = pickle.load(k_n1)
+
+    return G, kd
+
+
+
+
 if __name__ == "__main__":
     gdb = sys.argv[1]
-    PATH = sys.argv[2]
+    PATH = sys.argv[2] # path to csvs containing gps data
+
+    OUT_DIR = None
+
+    if len(sys.argv)>3:
+        OUT_DIR = sys.argv[3]
 
 
     node_layer = 3
     edge_layer = 2
 
+    graph_name = "traffic_graph.pickle"
+    kd_name = "kd_tree.pickle"
 
-    G = mire_check.get_expanded_graph_from_mire(gdb, node_layer, edge_layer)
-
-    kd = graph.KDTreeWrapper(G.init_graph)
-    
-    
+    G, kd = create_graph_and_kd_tree(gdb, node_layer, edge layer, OUT_DIR, True, graph_name, kd_name)
 
     data_files = os.listdir(PATH)
     os.chdir(PATH)
-
-    # node_sum = 0
-    # num_nodes = 0
 
     paths_from_csvs = []
 
@@ -93,7 +122,7 @@ if __name__ == "__main__":
 
             filename = PATH + data_file
 
-            routes_lat_long = stream_routes.get_routes_from_single_csv(filename, debug = True)
+            routes_lat_long = stream_routes.get_routes_from_single_csv(filename, debug = False)
 
             if routes_lat_long:
 
@@ -110,33 +139,18 @@ if __name__ == "__main__":
                 print("No routes from", filename)
 
 
-        # elif data_file.endswith(".p"):
-        #     try:
-        #         with open(str(filename), "rb") as fp:
 
-        #             tmp = pickle.load(fp)
+    res = paths_from_csvs
 
-        #             tmp = [[(tup[1],tup[0]) for tup in route[3]] for route in tmp]
+    res_name = "routes_from_all_csvs.pickle"
 
+    os.chdir(OUT_DIR)
 
-        #             result = matching.match_paths(tmp, kd, G)
+    with open(res_name, "wb+") as r_n:
+        pickle.dump(res, r_n)
 
-        #             print(result)
-
-        #             node_sum += len(result)
-        #             num_nodes += 1
-
-        #             matched_paths.append(result)
-
-        #     except Exception as ex:
-        #         print(3, ex, filename)
-        #         continue
-
-    res = paths_from_csvs#[]
-    # for file_routes in matched_paths:
-    #     res.extend(file_routes)
         
-    print("res:\n", res)
+    # print("res:\n", res)
 
     if res:
         featurelist_intersections = ['distance_efficiency','stops', 'signal'] 
